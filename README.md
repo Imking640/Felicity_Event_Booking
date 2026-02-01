@@ -71,15 +71,37 @@ Felicity_Event_Booking/
 
 ## 🎯 What's Complete
 
-✅ Backend project initialized
-✅ All dependencies installed  
-✅ Express server configured
-✅ MongoDB connection setup
-✅ Middleware pipeline configured
-✅ Environment variables configured
-✅ Health check endpoint working
-✅ Error handling implemented
-✅ Auto-restart with nodemon
+✅ **Task 1: Backend Setup**
+- Backend project initialized
+- All dependencies installed  
+- Express server configured
+- MongoDB connection setup
+- Middleware pipeline configured
+- Environment variables configured
+- Health check endpoint working
+- Error handling implemented
+- Auto-restart with nodemon
+
+✅ **Task 2: User Models & Authentication**
+- User model with Mongoose discriminators
+- Participant, Organizer, Admin schemas
+- Password hashing with bcrypt
+- JWT token generation & verification
+- Auth middleware (verifyToken, role checks)
+- Registration endpoint (IIIT/Non-IIIT)
+- Login endpoint
+- Protected routes (getMe, updateProfile, logout)
+- Email validation
+- Role-based access control
+
+### API Endpoints Ready:
+```
+POST   /api/auth/register   - Register new participant
+POST   /api/auth/login      - Login (all roles)
+GET    /api/auth/me         - Get current user (protected)
+PUT    /api/auth/profile    - Update profile (protected)
+POST   /api/auth/logout     - Logout (protected)
+```
 
 ## 📦 Dependencies Installed
 
