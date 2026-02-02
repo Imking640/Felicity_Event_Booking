@@ -51,8 +51,9 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/events', require('./routes/events'));
+app.use('/api/registrations', require('./routes/registrations'));
 // More routes will be added:
-// app.use('/api/events', require('./routes/events'));
 // app.use('/api/participants', require('./routes/participants'));
 // app.use('/api/organizers', require('./routes/organizers'));
 // app.use('/api/admin', require('./routes/admin'));
