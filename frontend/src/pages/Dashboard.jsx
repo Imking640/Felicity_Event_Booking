@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import DiscoDecorations from '../components/DiscoDecorations';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -12,307 +12,372 @@ const Dashboard = () => {
       padding: '2rem 1rem', 
       maxWidth: '1400px', 
       margin: '0 auto',
-      minHeight: 'calc(100vh - 80px)'
+      minHeight: 'calc(100vh - 80px)',
+      position: 'relative'
     }}>
+      <DiscoDecorations />
+
       {/* Welcome Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          padding: '2.5rem',
-          borderRadius: '30px',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
-          marginBottom: '2rem',
-          textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
-        <motion.div
-          animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ duration: 3, repeat: Infinity }}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            fontSize: '3rem',
-            opacity: 0.5
-          }}
-        >
-          🎪
-        </motion.div>
+      <div className="disco-card" style={{
+        padding: '3rem',
+        marginBottom: '2rem',
+        textAlign: 'center',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        <div className="logo-disco" style={{ margin: '0 auto 2rem' }} />
         
-        <motion.h1
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          style={{ 
-            fontSize: '2.5rem',
-            fontWeight: '900',
-            marginBottom: '0.5rem',
-            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          Welcome back, {user?.firstName || user?.organizerName}! 🎉
-        </motion.h1>
-        <p style={{ 
-          color: 'rgba(255,255,255,0.9)', 
-          fontSize: '1.1rem',
-          fontWeight: '500'
+        <h1 style={{ 
+          fontSize: 'clamp(2rem, 5vw, 3rem)',
+          fontFamily: "'Bungee', cursive",
+          marginBottom: '0.5rem',
+          color: '#ffff00',
+          textShadow: '0 0 20px rgba(255, 255, 0, 0.8), 0 0 40px rgba(255, 0, 255, 0.4)',
+          letterSpacing: '2px'
+        }}>
+          WELCOME BACK! 🎉
+        </h1>
+        <p className="glow-text" style={{ 
+          color: '#00ffff', 
+          fontSize: '1.2rem',
+          fontFamily: "'Anton', sans-serif",
+          textTransform: 'uppercase',
+          letterSpacing: '2px'
+        }}>
+          {user?.firstName || user?.organizerName}
+        </p>
+        <p style={{
+          color: '#ff00ff',
+          fontSize: '1rem',
+          marginTop: '1rem',
+          fontFamily: "'Anton', sans-serif"
         }}>
           Ready to make Felicity 2026 unforgettable?
         </p>
-      </motion.div>
+      </div>
       
       {/* Profile Card */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        style={{ 
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          padding: '2rem', 
-          borderRadius: '25px',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
-          marginBottom: '2rem'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <motion.div
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-            style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '2.5rem',
-              marginRight: '1.5rem',
-              boxShadow: '0 5px 20px rgba(245,87,108,0.4)'
-            }}
-          >
-            {user?.role === 'Organizer' ? '👑' : '🎓'}
-          </motion.div>
-          <div>
-            <h2 style={{ 
-              color: 'white', 
-              fontSize: '1.8rem',
-              fontWeight: '800',
-              marginBottom: '0.25rem'
+      <div className="disco-card" style={{ 
+        padding: '2.5rem',
+        marginBottom: '2rem',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        <h2 style={{
+          fontSize: '1.8rem',
+          marginBottom: '2rem',
+          color: '#ff00ff',
+          fontFamily: "'Bungee', cursive",
+          textShadow: '0 0 15px rgba(255, 0, 255, 0.6)',
+          textAlign: 'center'
+        }}>
+          👤 YOUR PROFILE
+        </h2>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '1.5rem'
+        }}>
+          <div style={{
+            background: 'rgba(255, 255, 0, 0.1)',
+            padding: '1.5rem',
+            borderRadius: '15px',
+            border: '2px solid rgba(255, 255, 0, 0.3)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{
+              fontSize: '2rem',
+              marginBottom: '0.5rem'
+            }}>📧</div>
+            <p style={{
+              color: '#ffff00',
+              fontSize: '0.8rem',
+              marginBottom: '0.5rem',
+              fontFamily: "'Anton', sans-serif",
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>Email</p>
+            <p style={{
+              color: '#fff',
+              fontSize: '1rem',
+              fontFamily: "'Anton', sans-serif",
+              wordBreak: 'break-all'
             }}>
-              Your Profile
-            </h2>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1rem' }}>
-              Your personal information
+              {user?.email}
+            </p>
+          </div>
+
+          {user?.firstName && (
+            <div style={{
+              background: 'rgba(0, 255, 255, 0.1)',
+              padding: '1.5rem',
+              borderRadius: '15px',
+              border: '2px solid rgba(0, 255, 255, 0.3)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <div style={{
+                fontSize: '2rem',
+                marginBottom: '0.5rem'
+              }}>👤</div>
+              <p style={{
+                color: '#00ffff',
+                fontSize: '0.8rem',
+                marginBottom: '0.5rem',
+                fontFamily: "'Anton', sans-serif",
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}>Full Name</p>
+              <p style={{
+                color: '#fff',
+                fontSize: '1rem',
+                fontFamily: "'Anton', sans-serif"
+              }}>
+                {user.firstName} {user.lastName}
+              </p>
+            </div>
+          )}
+
+          {user?.participantType && (
+            <div style={{
+              background: 'rgba(255, 0, 255, 0.1)',
+              padding: '1.5rem',
+              borderRadius: '15px',
+              border: '2px solid rgba(255, 0, 255, 0.3)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <div style={{
+                fontSize: '2rem',
+                marginBottom: '0.5rem'
+              }}>🎓</div>
+              <p style={{
+                color: '#ff00ff',
+                fontSize: '0.8rem',
+                marginBottom: '0.5rem',
+                fontFamily: "'Anton', sans-serif",
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}>Type</p>
+              <p style={{
+                color: '#fff',
+                fontSize: '1rem',
+                fontFamily: "'Anton', sans-serif"
+              }}>
+                {user.participantType} Student
+              </p>
+            </div>
+          )}
+
+          {user?.contactNumber && (
+            <div style={{
+              background: 'rgba(255, 0, 110, 0.1)',
+              padding: '1.5rem',
+              borderRadius: '15px',
+              border: '2px solid rgba(255, 0, 110, 0.3)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <div style={{
+                fontSize: '2rem',
+                marginBottom: '0.5rem'
+              }}>📱</div>
+              <p style={{
+                color: '#ff006e',
+                fontSize: '0.8rem',
+                marginBottom: '0.5rem',
+                fontFamily: "'Anton', sans-serif",
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}>Contact</p>
+              <p style={{
+                color: '#fff',
+                fontSize: '1rem',
+                fontFamily: "'Anton', sans-serif"
+              }}>
+                {user.contactNumber}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '2rem',
+        marginBottom: '2rem',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎭</div>
+          <h3 style={{
+            color: '#ff00ff',
+            fontSize: '1.5rem',
+            marginBottom: '1rem',
+            fontFamily: "'Bungee', cursive",
+            textShadow: '0 0 10px rgba(255, 0, 255, 0.6)'
+          }}>
+            Browse Events
+          </h3>
+          <p style={{
+            color: '#fff',
+            marginBottom: '1.5rem',
+            fontFamily: "'Anton', sans-serif",
+            lineHeight: '1.6'
+          }}>
+            Discover amazing workshops, competitions, and cultural events
+          </p>
+          <button
+            onClick={() => navigate('/events')}
+            className="disco-button"
+            style={{ width: '100%' }}
+          >
+            🎪 EXPLORE NOW
+          </button>
+        </div>
+
+        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎫</div>
+          <h3 style={{
+            color: '#00ffff',
+            fontSize: '1.5rem',
+            marginBottom: '1rem',
+            fontFamily: "'Bungee', cursive",
+            textShadow: '0 0 10px rgba(0, 255, 255, 0.6)'
+          }}>
+            My Registrations
+          </h3>
+          <p style={{
+            color: '#fff',
+            marginBottom: '1.5rem',
+            fontFamily: "'Anton', sans-serif",
+            lineHeight: '1.6'
+          }}>
+            View all your registered events and QR tickets
+          </p>
+          <button
+            className="disco-button"
+            style={{ width: '100%' }}
+          >
+            📋 VIEW TICKETS
+          </button>
+        </div>
+
+        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⚙️</div>
+          <h3 style={{
+            color: '#ffff00',
+            fontSize: '1.5rem',
+            marginBottom: '1rem',
+            fontFamily: "'Bungee', cursive",
+            textShadow: '0 0 10px rgba(255, 255, 0, 0.6)'
+          }}>
+            Edit Profile
+          </h3>
+          <p style={{
+            color: '#fff',
+            marginBottom: '1.5rem',
+            fontFamily: "'Anton', sans-serif",
+            lineHeight: '1.6'
+          }}>
+            Update your personal information and preferences
+          </p>
+          <button
+            className="disco-button"
+            style={{ width: '100%' }}
+          >
+            ✏️ UPDATE INFO
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="disco-card" style={{
+        padding: '3rem',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        <h2 style={{
+          fontSize: '1.8rem',
+          marginBottom: '2rem',
+          color: '#ffff00',
+          fontFamily: "'Bungee', cursive",
+          textShadow: '0 0 15px rgba(255, 255, 0, 0.6)',
+          textAlign: 'center'
+        }}>
+          📊 YOUR STATS
+        </h2>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '2rem',
+          textAlign: 'center'
+        }}>
+          <div>
+            <h3 className="glow-text" style={{
+              fontSize: '4rem',
+              color: '#ff00ff',
+              marginBottom: '0.5rem',
+              fontFamily: "'Bungee', cursive"
+            }}>
+              0
+            </h3>
+            <p style={{
+              color: '#fff',
+              fontSize: '1.1rem',
+              fontFamily: "'Anton', sans-serif",
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>
+              Events Registered
+            </p>
+          </div>
+
+          <div>
+            <h3 className="glow-text" style={{
+              fontSize: '4rem',
+              color: '#00ffff',
+              marginBottom: '0.5rem',
+              fontFamily: "'Bungee', cursive"
+            }}>
+              0
+            </h3>
+            <p style={{
+              color: '#fff',
+              fontSize: '1.1rem',
+              fontFamily: "'Anton', sans-serif",
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>
+              Events Attended
+            </p>
+          </div>
+
+          <div>
+            <h3 className="glow-text" style={{
+              fontSize: '4rem',
+              color: '#ffff00',
+              marginBottom: '0.5rem',
+              fontFamily: "'Bungee', cursive"
+            }}>
+              ₹0
+            </h3>
+            <p style={{
+              color: '#fff',
+              fontSize: '1.1rem',
+              fontFamily: "'Anton', sans-serif",
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>
+              Total Spent
             </p>
           </div>
         </div>
-        
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '1rem' 
-        }}>
-          <InfoBox icon="📧" label="Email" value={user?.email} />
-          <InfoBox icon="🎭" label="Role" value={user?.role} />
-          {user?.participantType && <InfoBox icon="🎓" label="Type" value={user.participantType} />}
-          {user?.college && <InfoBox icon="🏫" label="College" value={user.college} />}
-          {user?.contactNumber && <InfoBox icon="📱" label="Contact" value={user.contactNumber} />}
-        </div>
-      </motion.div>
-
-      {/* Stats Cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-          gap: '1.5rem',
-          marginBottom: '2rem'
-        }}
-      >
-        <StatCard 
-          icon="🎫" 
-          value="0" 
-          label="Registered Events"
-          gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-          delay={0.3}
-        />
-        <StatCard 
-          icon="✅" 
-          value="0" 
-          label="Attended Events"
-          gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
-          delay={0.4}
-        />
-        <StatCard 
-          icon="📅" 
-          value="0" 
-          label="Upcoming Events"
-          gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
-          delay={0.5}
-        />
-      </motion.div>
-
-      {/* Registrations Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-        style={{ 
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          padding: '2.5rem', 
-          borderRadius: '25px',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
-          textAlign: 'center'
-        }}
-      >
-        <motion.div
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          style={{ fontSize: '4rem', marginBottom: '1rem' }}
-        >
-          🎪
-        </motion.div>
-        <h2 style={{ 
-          color: 'white', 
-          fontSize: '1.8rem',
-          fontWeight: '800',
-          marginBottom: '1rem'
-        }}>
-          My Registrations
-        </h2>
-        <p style={{ 
-          color: 'rgba(255,255,255,0.8)', 
-          fontSize: '1.1rem',
-          marginBottom: '2rem'
-        }}>
-          No registrations yet. Let's change that!
-        </p>
-        
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/events')}
-          style={{
-            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            color: 'white',
-            padding: '1rem 2.5rem',
-            border: 'none',
-            borderRadius: '25px',
-            fontSize: '1.1rem',
-            fontWeight: '700',
-            cursor: 'pointer',
-            boxShadow: '0 10px 30px rgba(245, 87, 108, 0.4)',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          🎉 Browse Events
-        </motion.button>
-      </motion.div>
+      </div>
     </div>
   );
 };
-
-// Helper Components
-const InfoBox = ({ icon, label, value }) => (
-  <motion.div
-    whileHover={{ scale: 1.02 }}
-    style={{
-      background: 'rgba(255, 255, 255, 0.1)',
-      backdropFilter: 'blur(10px)',
-      padding: '1rem',
-      borderRadius: '15px',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem'
-    }}
-  >
-    <span style={{ fontSize: '1.5rem' }}>{icon}</span>
-    <div>
-      <p style={{ 
-        fontSize: '0.75rem', 
-        color: 'rgba(255,255,255,0.7)', 
-        marginBottom: '0.25rem',
-        textTransform: 'uppercase',
-        fontWeight: '600',
-        letterSpacing: '0.05em'
-      }}>
-        {label}
-      </p>
-      <p style={{ 
-        fontSize: '1rem', 
-        color: 'white', 
-        fontWeight: '700'
-      }}>
-        {value}
-      </p>
-    </div>
-  </motion.div>
-);
-
-const StatCard = ({ icon, value, label, gradient, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.9 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.5, delay }}
-    whileHover={{ scale: 1.05, y: -5 }}
-    style={{
-      background: gradient,
-      padding: '2rem',
-      borderRadius: '25px',
-      textAlign: 'center',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-      border: '1px solid rgba(255, 255, 255, 0.3)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}
-  >
-    <motion.div
-      animate={{ 
-        rotate: [0, 10, -10, 0],
-        scale: [1, 1.1, 1]
-      }}
-      transition={{ duration: 3, repeat: Infinity }}
-      style={{ fontSize: '3rem', marginBottom: '0.5rem' }}
-    >
-      {icon}
-    </motion.div>
-    <motion.h3
-      animate={{ scale: [1, 1.05, 1] }}
-      transition={{ duration: 2, repeat: Infinity }}
-      style={{ 
-        fontSize: '3rem', 
-        marginBottom: '0.5rem',
-        color: 'white',
-        fontWeight: '900'
-      }}
-    >
-      {value}
-    </motion.h3>
-    <p style={{ 
-      color: 'rgba(255,255,255,0.95)', 
-      fontSize: '1.1rem',
-      fontWeight: '600'
-    }}>
-      {label}
-    </p>
-  </motion.div>
-);
 
 export default Dashboard;

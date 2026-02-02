@@ -1,0 +1,434 @@
+/* FELICITY 2026 - Retro Disco Theme */
+@import url('https://fonts.googleapis.com/css2?family=Bungee+Shade&family=Bungee&family=Anton&display=swap');
+
+/* Custom Cursor */
+body {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="8" fill="%23ff00ff" opacity="0.8"/><circle cx="12" cy="12" r="3" fill="white"/></svg>') 12 12, auto;
+}
+
+/* Floating disco balls */
+.disco-ball {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle at 25% 25%, #fff, #aaa, #666);
+  border-radius: 50%;
+  box-shadow: 0 0 30px rgba(255,255,255,0.5);
+  animation: float-disco 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes float-disco {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(180deg); }
+}
+
+/* Vinyl record decorations */
+.vinyl-record {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #1a1a1a 30%, #000 30%, #1a1a1a 32%, transparent 32%);
+  border: 3px solid #1a1a1a;
+  animation: spin-vinyl 4s linear infinite;
+  pointer-events: none;
+  opacity: 0.3;
+  z-index: 1;
+}
+
+@keyframes spin-vinyl {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Star burst decoration */
+.star-burst {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, #ffff00 0%, transparent 70%);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: pulse-star 2s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0.8;
+  z-index: 1;
+}
+
+@keyframes pulse-star {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.6; }
+  50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
+}
+
+/* Dancing speakers */
+.speaker {
+  position: fixed;
+  width: 80px;
+  height: 120px;
+  background: linear-gradient(135deg, #1a1a1a, #333);
+  border: 3px solid #666;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px;
+  animation: speaker-bounce 0.5s ease-in-out infinite alternate;
+  z-index: 1;
+}
+
+.speaker-cone {
+  width: 50px;
+  height: 50px;
+  background: radial-gradient(circle, #ff00ff, #660066);
+  border-radius: 50%;
+  border: 3px solid #333;
+  animation: speaker-pulse 0.5s ease-in-out infinite alternate;
+}
+
+.speaker-cone.small {
+  width: 30px;
+  height: 30px;
+}
+
+@keyframes speaker-bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-10px); }
+}
+
+@keyframes speaker-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 10px rgba(255,0,255,0.5); }
+  100% { transform: scale(1.1); box-shadow: 0 0 20px rgba(255,0,255,0.8); }
+}
+
+/* Rainbow mouse trail */
+.trail-particle {
+  position: fixed;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: trail-fade 0.8s ease-out forwards;
+  z-index: 999;
+}
+
+@keyframes trail-fade {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0); }
+}
+
+/* Confetti on success */
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 20px;
+  pointer-events: none;
+  animation: confetti-fall 3s linear forwards;
+  z-index: 1000;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* 3D Card effects */
+.disco-card {
+  background: linear-gradient(135deg, rgba(45, 0, 102, 0.95) 0%, rgba(26, 0, 51, 0.95) 100%);
+  border: 4px solid #ff00ff;
+  border-radius: 20px;
+  box-shadow: 
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 0 40px rgba(255,0,255,0.2),
+    0 0 0 8px rgba(26,0,51,0.8),
+    0 0 0 12px #00ffff;
+  transform: perspective(1000px) rotateX(0deg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.disco-card:hover {
+  transform: perspective(1000px) rotateX(2deg) translateY(-10px);
+  box-shadow: 
+    0 30px 80px rgba(0,0,0,0.7),
+    inset 0 0 40px rgba(255,0,255,0.3),
+    0 0 0 8px rgba(26,0,51,0.8),
+    0 0 0 12px #00ffff,
+    0 0 60px rgba(255,0,255,0.6);
+}
+
+/* Input fields with reactive effects */
+.disco-input {
+  background: rgba(0,0,0,0.6) !important;
+  border: 3px solid #00ffff !important;
+  color: #fff !important;
+  font-family: 'Anton', 'Poppins', sans-serif;
+  font-size: 18px;
+  padding: 15px 20px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.disco-input:focus {
+  outline: none !important;
+  border-color: #ff00ff !important;
+  background: rgba(255,0,255,0.1) !important;
+  box-shadow: 
+    0 0 30px rgba(255,0,255,0.6),
+    inset 0 0 20px rgba(255,0,255,0.2) !important;
+  transform: scale(1.02) translateY(-2px);
+}
+
+.disco-input:hover {
+  border-color: #ffff00 !important;
+  box-shadow: 0 0 20px rgba(255,255,0,0.4);
+}
+
+.disco-input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Labels with bounce */
+.disco-label {
+  color: #00ffff;
+  font-family: 'Bungee', 'Poppins', cursive;
+  font-size: 16px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.disco-label:hover {
+  transform: translateY(-3px);
+  color: #ffff00;
+}
+
+/* Buttons with shine effect */
+.disco-button {
+  background: linear-gradient(135deg, #ff00ff, #ff0080) !important;
+  border: 4px solid #ffff00 !important;
+  border-radius: 15px;
+  color: #fff !important;
+  font-family: 'Bungee', 'Poppins', cursive;
+  font-size: 20px;
+  padding: 18px 32px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  box-shadow: 
+    0 10px 30px rgba(255,0,255,0.6),
+    inset 0 -5px 20px rgba(0,0,0,0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.disco-button::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+  transform: rotate(45deg);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.disco-button:hover {
+  transform: scale(1.05) translateY(-5px) !important;
+  box-shadow: 
+    0 15px 40px rgba(255,0,255,0.8),
+    inset 0 -5px 20px rgba(0,0,0,0.3),
+    0 0 60px rgba(255,0,255,0.6) !important;
+  border-color: #00ffff !important;
+}
+
+.disco-button:active {
+  transform: scale(0.95) translateY(-2px) !important;
+  box-shadow: 
+    0 5px 15px rgba(255,0,255,0.6),
+    inset 0 5px 10px rgba(0,0,0,0.5) !important;
+}
+
+.disco-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Spinning disco logo */
+.logo-disco {
+  width: 120px;
+  height: 120px;
+  background: conic-gradient(from 0deg, #ff00ff, #00ffff, #ffff00, #ff0080, #ff00ff);
+  border-radius: 50%;
+  position: relative;
+  animation: logo-spin 3s linear infinite;
+  box-shadow: 0 0 60px rgba(255,0,255,0.8);
+  display: inline-block;
+}
+
+@keyframes logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.logo-disco::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: #0d0221;
+  border-radius: 50%;
+  border: 3px solid #fff;
+}
+
+/* Reactive title effects */
+.reactive-title {
+  font-family: 'Bungee Shade', 'Bungee', cursive;
+  color: #ffff00;
+  text-shadow: 
+    3px 3px 0 #ff00ff,
+    6px 6px 0 #00ffff,
+    9px 9px 20px rgba(0,0,0,0.5);
+  transition: transform 0.1s ease;
+  user-select: none;
+  font-weight: 900;
+}
+
+.reactive-title:hover {
+  transform: scale(1.05) rotate(-2deg);
+  text-shadow: 
+    4px 4px 0 #ff00ff,
+    8px 8px 0 #00ffff,
+    12px 12px 30px rgba(0,0,0,0.7);
+}
+
+/* Event cards with 3D */
+.event-card-disco {
+  background: linear-gradient(135deg, rgba(45, 0, 102, 0.8) 0%, rgba(26, 0, 51, 0.8) 100%);
+  border: 3px solid #ff00ff;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 
+    0 15px 40px rgba(0,0,0,0.5),
+    inset 0 0 30px rgba(255,0,255,0.15),
+    0 0 0 6px rgba(26,0,51,0.6),
+    0 0 0 9px #00ffff;
+  transform: perspective(1000px) rotateX(0deg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+}
+
+.event-card-disco:hover {
+  transform: perspective(1000px) rotateX(3deg) translateY(-15px) scale(1.02);
+  box-shadow: 
+    0 25px 60px rgba(0,0,0,0.7),
+    inset 0 0 40px rgba(255,0,255,0.25),
+    0 0 0 6px rgba(26,0,51,0.6),
+    0 0 0 9px #00ffff,
+    0 0 80px rgba(255,0,255,0.7);
+  border-color: #ffff00;
+}
+
+/* Notification toasts */
+.disco-toast {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  background: linear-gradient(135deg, #00ff00, #00cc00);
+  color: #000;
+  padding: 20px 35px;
+  border-radius: 15px;
+  border: 4px solid #ffff00;
+  font-family: 'Bungee', 'Poppins', cursive;
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: 
+    0 10px 40px rgba(0,255,0,0.6),
+    0 0 60px rgba(0,255,0,0.4);
+  animation: toast-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  z-index: 1000;
+}
+
+.disco-toast.error {
+  background: linear-gradient(135deg, #ff0000, #cc0000);
+  border-color: #ffff00;
+  color: #fff;
+  box-shadow: 
+    0 10px 40px rgba(255,0,0,0.6),
+    0 0 60px rgba(255,0,0,0.4);
+}
+
+@keyframes toast-bounce {
+  0% { transform: translateX(500px) rotate(20deg); opacity: 0; }
+  60% { transform: translateX(-30px) rotate(-5deg); }
+  100% { transform: translateX(0) rotate(0); opacity: 1; }
+}
+
+/* Glowing text */
+.glow-text {
+  text-shadow: 
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    0 0 30px currentColor;
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor; }
+  50% { text-shadow: 0 0 20px currentColor, 0 0 30px currentColor, 0 0 40px currentColor; }
+}
+
+/* Feature cards */
+.feature-card-disco {
+  background: linear-gradient(135deg, rgba(255, 0, 110, 0.2) 0%, rgba(131, 56, 236, 0.2) 100%);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  border: 3px solid rgba(255, 0, 110, 0.5);
+  box-shadow: 
+    0 8px 32px 0 rgba(255, 0, 110, 0.3),
+    inset 0 0 20px rgba(255, 0, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card-disco::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  animation: feature-glow 4s ease-in-out infinite;
+}
+
+@keyframes feature-glow {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20%, 20%); }
+}
+
+.feature-card-disco:hover {
+  transform: translateY(-10px) scale(1.03);
+  border-color: #ffff00;
+  box-shadow: 
+    0 15px 50px 0 rgba(255, 0, 110, 0.5),
+    inset 0 0 30px rgba(255, 0, 255, 0.2),
+    0 0 60px rgba(255, 0, 110, 0.4);
+}

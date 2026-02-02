@@ -18,7 +18,10 @@ const Navbar = () => {
     color: '#ffff00',
     textDecoration: 'none',
     fontSize: '1rem',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: "'Anton', sans-serif",
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
     padding: '0.5rem 1rem',
     borderRadius: '25px',
     transition: 'all 0.3s ease',
@@ -53,9 +56,13 @@ const Navbar = () => {
             textDecoration: 'none', 
             fontSize: '1.75rem', 
             fontWeight: '900',
+            fontFamily: "'Bungee', cursive",
             textShadow: '0 0 20px rgba(255, 255, 0, 0.8), 0 0 40px rgba(255, 0, 255, 0.6)',
             letterSpacing: '2px'
-          }}>
+          }}
+          onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+          >
             ⚡ FELICITY ⚡
           </Link>
         </div>
