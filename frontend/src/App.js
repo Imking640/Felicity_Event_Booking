@@ -13,7 +13,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+        <div style={{ minHeight: '100vh', backgroundColor: '#0d0221' }}>
           <Navbar />
           <Routes>
             <Route path="/" element={<Home />} />
