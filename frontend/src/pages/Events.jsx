@@ -60,7 +60,7 @@ const Events = () => {
     }
   };
 
-  const categories = ['All', 'Technical', 'Cultural', 'Sports', 'Workshop'];
+  const categories = ['All', 'Technical', 'Cultural', 'Sports', 'Workshop', 'Normal'];
   
   const filteredEvents = selectedCategory === 'All' 
     ? events 
@@ -219,7 +219,8 @@ const Events = () => {
                 marginBottom: '0.5rem',
                 color: '#ff00ff',
                 fontFamily: "'Bungee', cursive",
-                textShadow: '0 0 10px rgba(255, 0, 255, 0.6)'
+                textShadow: '0 0 10px rgba(255, 0, 255, 0.6)',
+                wordBreak: 'break-word'
               }}>
                 {event.eventName}
               </h3>
@@ -232,7 +233,7 @@ const Events = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '1px'
               }}>
-                {event.eventType} • {event.organizerName}
+                {event.eventType} • {event.organizer?.organizerName || 'Organizer'}
               </p>
 
               <p style={{
@@ -242,8 +243,8 @@ const Events = () => {
                 fontFamily: "'Anton', sans-serif",
                 fontSize: '0.95rem'
               }}>
-                {event.description?.substring(0, 120)}
-                {event.description?.length > 120 ? '...' : ''}
+                {event.eventDescription?.substring(0, 120)}
+                {event.eventDescription?.length > 120 ? '...' : ''}
               </p>
 
               <div style={{ 
@@ -258,20 +259,24 @@ const Events = () => {
                   borderRadius: '10px',
                   border: '1px solid rgba(255, 255, 0, 0.5)',
                   fontFamily: "'Anton', sans-serif",
-                  fontSize: '0.9rem'
+                  fontSize: '0.9rem',
+                  flex: '1 1 auto'
                 }}>
-                  📅 {new Date(event.eventDate).toLocaleDateString()}
+                  📅 {new Date(event.eventStartDate).toLocaleDateString()}
                 </div>
-                <div style={{
-                  background: 'rgba(0, 255, 255, 0.2)',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(0, 255, 255, 0.5)',
-                  fontFamily: "'Anton', sans-serif",
-                  fontSize: '0.9rem'
-                }}>
-                  ⏰ {event.eventTime}
-                </div>
+                {event.venue && (
+                  <div style={{
+                    background: 'rgba(0, 255, 255, 0.2)',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(0, 255, 255, 0.5)',
+                    fontFamily: "'Anton', sans-serif",
+                    fontSize: '0.9rem',
+                    flex: '1 1 auto'
+                  }}>
+                    📍 {event.venue}
+                  </div>
+                )}
               </div>
 
               <div style={{
@@ -289,7 +294,7 @@ const Events = () => {
                   fontFamily: "'Anton', sans-serif",
                   fontSize: '0.9rem'
                 }}>
-                  👥 {event.currentRegistrations || 0} / {event.maxParticipants}
+                  👥 {event.currentRegistrations || 0} / {event.registrationLimit || event.maxParticipants || '∞'}
                 </span>
                 <span style={{
                   color: '#ffff00',
@@ -304,17 +309,23 @@ const Events = () => {
 
               <button
                 onClick={() => handleRegister(event._id)}
-                disabled={registering === event._id || event.currentRegistrations >= event.maxParticipants}
+                disabled={
+                  registering === event._id || 
+                  event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) ||
+                  !event.isRegistrationOpen
+                }
                 className="disco-button"
                 style={{ 
                   width: '100%',
-                  opacity: event.currentRegistrations >= event.maxParticipants ? 0.5 : 1,
-                  cursor: event.currentRegistrations >= event.maxParticipants ? 'not-allowed' : 'pointer'
+                  opacity: (event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen) ? 0.5 : 1,
+                  cursor: (event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen) ? 'not-allowed' : 'pointer'
                 }}
               >
                 {registering === event._id 
                   ? '⏳ REGISTERING...'
-                  : event.currentRegistrations >= event.maxParticipants
+                  : !event.isRegistrationOpen
+                  ? '🔒 REGISTRATION CLOSED'
+                  : event.currentRegistrations >= (event.registrationLimit || event.maxParticipants)
                   ? '❌ HOUSE FULL'
                   : '🎟️ REGISTER NOW'}
               </button>
