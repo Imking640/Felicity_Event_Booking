@@ -53,10 +53,9 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/registrations', require('./routes/registrations'));
+app.use('/api/admin', require('./routes/admin'));
 // More routes will be added:
 // app.use('/api/participants', require('./routes/participants'));
-// app.use('/api/organizers', require('./routes/organizers'));
-// app.use('/api/admin', require('./routes/admin'));
 
 // Error Handling Middleware
 // Catches all errors and sends consistent response
