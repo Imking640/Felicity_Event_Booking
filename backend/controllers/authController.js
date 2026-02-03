@@ -238,3 +238,25 @@ exports.updateProfile = async (req, res) => {
     });
   }
 };
+
+// @desc    Public list of organizers (id, name, category)
+// @route   GET /api/auth/organizers
+// @access  Public
+exports.listOrganizersPublic = async (req, res) => {
+  try {
+    const organizers = await Organizer.find({ isApproved: true, isActive: true })
+      .select('organizerName category');
+
+    res.json({
+      success: true,
+      organizers
+    });
+  } catch (error) {
+    console.error('List organizers error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch organizers',
+      error: error.message
+    });
+  }
+};

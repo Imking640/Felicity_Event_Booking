@@ -29,28 +29,17 @@ const DiscoDecorations = () => {
 
   return (
     <>
-      {/* Floating disco balls */}
-      <div className="disco-ball" style={{ top: '10%', left: '10%', animationDelay: '0s' }} />
-      <div className="disco-ball" style={{ top: '20%', right: '15%', animationDelay: '1s' }} />
-      <div className="disco-ball" style={{ bottom: '15%', left: '20%', animationDelay: '2s' }} />
-      
-      {/* Vinyl records */}
-      <div className="vinyl-record" style={{ top: '5%', right: '5%' }} />
-      <div className="vinyl-record" style={{ bottom: '10%', right: '25%', animationDelay: '-2s' }} />
-      
-      {/* Star bursts */}
-      <div className="star-burst" style={{ top: '30%', left: '5%' }} />
-      <div className="star-burst" style={{ top: '60%', right: '8%', animationDelay: '-1s' }} />
-      
-      {/* Dancing speakers */}
-      <div className="speaker" style={{ top: '40%', left: '20px' }}>
-        <div className="speaker-cone small" />
-        <div className="speaker-cone" />
-      </div>
-      <div className="speaker" style={{ top: '40%', right: '20px', animationDelay: '-0.25s' }}>
-        <div className="speaker-cone small" />
-        <div className="speaker-cone" />
-      </div>
+      {/* Space background layers (no symbols) */}
+      <div className="space-stars" />
+      <div className="space-stars layer2" />
+      <div className="space-nebula" />
+      <div className="space-twinkle" />
+
+      {/* Shooting stars */}
+      <div className="shooting-star" style={{ top: '12%', right: '18%', animationDelay: '0s', animationDuration: '3.2s' }} />
+      <div className="shooting-star" style={{ top: '28%', right: '62%', animationDelay: '2.2s', animationDuration: '3.8s' }} />
+      <div className="shooting-star" style={{ top: '55%', right: '42%', animationDelay: '5.5s', animationDuration: '3.4s' }} />
+      <div className="shooting-star" style={{ top: '72%', right: '78%', animationDelay: '7.3s', animationDuration: '3.1s' }} />
     </>
   );
 };

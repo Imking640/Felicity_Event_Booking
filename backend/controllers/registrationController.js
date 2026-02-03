@@ -39,28 +39,31 @@ exports.registerForEvent = async (req, res) => {
       });
     }
     
+    // Normalize body to avoid undefined access when Content-Type isn't JSON
+    const body = req.body || {};
+
     // Prepare registration data
     const registrationData = {
       event: event._id,
       participant: req.user.id,
-      customFormData: req.body.customFormData || {},
-      teamName: req.body.teamName,
-      teamMembers: req.body.teamMembers
+      customFormData: body.customFormData || {},
+      teamName: body.teamName,
+      teamMembers: body.teamMembers
     };
     
     // Handle merchandise-specific fields
     if (event.eventType === 'Merchandise') {
-      if (!req.body.merchandiseDetails) {
+      if (!body.merchandiseDetails) {
         return res.status(400).json({
           success: false,
           message: 'Merchandise details are required for merchandise events'
         });
       }
       
-      registrationData.merchandiseDetails = req.body.merchandiseDetails;
+      registrationData.merchandiseDetails = body.merchandiseDetails;
       
       // Check stock availability
-      const requestedQuantity = req.body.merchandiseDetails.quantity || 1;
+      const requestedQuantity = body.merchandiseDetails.quantity || 1;
       if (event.merchandiseDetails.stockQuantity < requestedQuantity) {
         return res.status(400).json({
           success: false,
@@ -69,13 +72,16 @@ exports.registerForEvent = async (req, res) => {
       }
     }
     
-    // Validate custom form data
+    // Validate custom form data (schema uses fieldName and isRequired)
     if (event.customForm && event.customForm.length > 0) {
+      const customData = body.customFormData || {};
       for (const field of event.customForm) {
-        if (field.required && !req.body.customFormData[field.name]) {
+        const name = field.fieldName || field.name; // backward compatibility
+        const required = typeof field.isRequired === 'boolean' ? field.isRequired : field.required;
+        if (required && !customData[name]) {
           return res.status(400).json({
             success: false,
-            message: `Field "${field.label}" is required`
+            message: `Field "${name}" is required`
           });
         }
       }
@@ -288,8 +294,9 @@ exports.uploadPaymentProof = async (req, res) => {
       });
     }
     
-    // Store payment proof (file path or URL)
-    registration.paymentProof = req.body.paymentProof || req.file?.path;
+  // Normalize body and store payment proof (file path or URL)
+  const body = req.body || {};
+  registration.paymentProof = body.paymentProof || req.file?.path;
     registration.paymentStatus = 'pending';
     await registration.save();
     
@@ -331,7 +338,7 @@ exports.verifyPayment = async (req, res) => {
       });
     }
     
-    const { approved } = req.body;
+  const { approved } = req.body || {};
     
     if (approved) {
       registration.paymentStatus = 'paid';

@@ -40,58 +40,7 @@ const Login = () => {
       {/* Disco Decorations */}
       <DiscoDecorations />
 
-      {/* Additional floating elements for empty space */}
-      <div style={{
-        position: 'absolute',
-        top: '15%',
-        left: '8%',
-        fontSize: '4rem',
-        animation: 'float-disco 4s ease-in-out infinite',
-        opacity: 0.7,
-        zIndex: 5
-      }}>🎭</div>
-
-      <div style={{
-        position: 'absolute',
-        top: '60%',
-        right: '10%',
-        fontSize: '3.5rem',
-        animation: 'float-disco 5s ease-in-out infinite',
-        animationDelay: '1s',
-        opacity: 0.7,
-        zIndex: 5
-      }}>🎪</div>
-
-      <div style={{
-        position: 'absolute',
-        bottom: '15%',
-        left: '12%',
-        fontSize: '3rem',
-        animation: 'float-disco 4.5s ease-in-out infinite',
-        animationDelay: '2s',
-        opacity: 0.7,
-        zIndex: 5
-      }}>✨</div>
-
-      <div style={{
-        position: 'absolute',
-        top: '25%',
-        right: '15%',
-        fontSize: '2.5rem',
-        animation: 'spin-vinyl 8s linear infinite',
-        opacity: 0.6,
-        zIndex: 5
-      }}>💿</div>
-
-      <div style={{
-        position: 'absolute',
-        bottom: '25%',
-        right: '8%',
-        fontSize: '3rem',
-        animation: 'pulse-star 3s ease-in-out infinite',
-        opacity: 0.7,
-        zIndex: 5
-      }}>🎵</div>
+      {/* Clean space background only (no extra symbols) */}
 
       <div className="disco-card" style={{ padding: '3rem', maxWidth: '450px', width: '100%', zIndex: 10 }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>

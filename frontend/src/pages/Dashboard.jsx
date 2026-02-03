@@ -202,14 +202,15 @@ const Dashboard = () => {
 
       {/* Quick Actions */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '2rem',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '1.5rem',
         marginBottom: '2rem',
         position: 'relative',
-        zIndex: 10
+        zIndex: 10,
+        justifyContent: 'center'
       }}>
-        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', flex: '1 1 300px', maxWidth: '400px' }}>
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎭</div>
           <h3 style={{
             color: '#ff00ff',
@@ -237,7 +238,7 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', flex: '1 1 300px', maxWidth: '400px' }}>
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎫</div>
           <h3 style={{
             color: '#00ffff',
@@ -264,7 +265,7 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', flex: '1 1 300px', maxWidth: '400px' }}>
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⚙️</div>
           <h3 style={{
             color: '#ffff00',
@@ -286,6 +287,7 @@ const Dashboard = () => {
           <button
             className="disco-button"
             style={{ width: '100%' }}
+            onClick={() => navigate('/profile')}
           >
             ✏️ UPDATE INFO
           </button>

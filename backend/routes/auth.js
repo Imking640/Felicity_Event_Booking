@@ -6,6 +6,8 @@ const { verifyToken } = require('../middleware/auth');
 // Public routes
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+// Public: list organizers for onboarding
+router.get('/organizers', authController.listOrganizersPublic);
 
 // Protected routes (require authentication)
 router.get('/me', verifyToken, authController.getMe);

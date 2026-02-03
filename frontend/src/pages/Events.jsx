@@ -10,7 +10,7 @@ const Events = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [registering, setRegistering] = useState(null);
   
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,6 +32,11 @@ const Events = () => {
     if (!isAuthenticated) {
       showDiscoToast('⚠️ Please login to register for events', false);
       navigate('/login');
+      return;
+    }
+
+    if (user?.role !== 'participant') {
+      showDiscoToast('⚠️ Only participants can register for events. Please login with a participant account.', false);
       return;
     }
 
@@ -311,18 +316,21 @@ const Events = () => {
                 onClick={() => handleRegister(event._id)}
                 disabled={
                   registering === event._id || 
+                  (user && user.role !== 'participant') ||
                   event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) ||
                   !event.isRegistrationOpen
                 }
                 className="disco-button"
                 style={{ 
                   width: '100%',
-                  opacity: (event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen) ? 0.5 : 1,
-                  cursor: (event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen) ? 'not-allowed' : 'pointer'
+                  opacity: ((user && user.role !== 'participant') || event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen) ? 0.5 : 1,
+                  cursor: ((user && user.role !== 'participant') || event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen) ? 'not-allowed' : 'pointer'
                 }}
               >
                 {registering === event._id 
                   ? '⏳ REGISTERING...'
+                  : (user && user.role !== 'participant')
+                  ? '🔒 PARTICIPANTS ONLY'
                   : !event.isRegistrationOpen
                   ? '🔒 REGISTRATION CLOSED'
                   : event.currentRegistrations >= (event.registrationLimit || event.maxParticipants)

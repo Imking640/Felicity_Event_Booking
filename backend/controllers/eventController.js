@@ -17,7 +17,7 @@ exports.getEvents = async (req, res) => {
       tags,        // Tags filter
       startDate,   // Filter by start date range
       endDate,
-      sortBy = 'eventStartDate',
+      sortBy = (req.user && req.user.role === 'participant') ? 'relevance' : 'eventStartDate',
       order = 'asc',
       page = 1,
       limit = 20
@@ -58,20 +58,57 @@ exports.getEvents = async (req, res) => {
     // Pagination
     const skip = (page - 1) * limit;
     
-    // Sort
+    // Always get with basic sort by date for stable ordering before relevance tweaks
     const sortOrder = order === 'desc' ? -1 : 1;
-    const sortObj = { [sortBy]: sortOrder };
-    
-    // Execute query
-    const events = await Event.find(query)
+    const baseSort = { eventStartDate: sortOrder };
+
+    // Execute base query
+    let events = await Event.find(query)
       .populate('organizer', 'organizerName email category')
-      .sort(sortObj)
+      .sort(baseSort)
       .skip(skip)
       .limit(parseInt(limit));
     
     // Get total count for pagination
     const total = await Event.countDocuments(query);
-    
+
+    // Relevance sorting for participants based on interests & followed clubs
+    if (sortBy === 'relevance' && req.user && req.user.role === 'participant') {
+      try {
+        const { Participant } = require('../models/User');
+        const me = await Participant.findById(req.user.id).select('interests followedClubs');
+        if (me) {
+          const interests = new Set((me.interests || []).map(s => s.toLowerCase()));
+          const followed = new Set((me.followedClubs || []).map(id => String(id)));
+          // Re-fetch without pagination to score correctly, then paginate post-sort
+          const allEvents = await Event.find(query)
+            .populate('organizer', 'organizerName email category')
+            .sort(baseSort);
+
+          const scored = allEvents.map(ev => {
+            let score = 0;
+            // tag matches
+            if (Array.isArray(ev.tags) && interests.size) {
+              const hits = ev.tags.filter(t => interests.has(String(t).toLowerCase())).length;
+              score += hits * 2;
+            }
+            // organizer followed
+            if (ev.organizer && followed.has(String(ev.organizer._id))) {
+              score += 5;
+            }
+            return { ev, score };
+          });
+
+          scored.sort((a, b) => b.score - a.score || new Date(a.ev.eventStartDate) - new Date(b.ev.eventStartDate));
+          // apply pagination after relevance sort
+          const start = (page - 1) * limit;
+          events = scored.slice(start, start + parseInt(limit)).map(s => s.ev);
+        }
+      } catch (relevanceErr) {
+        console.error('Relevance sort error:', relevanceErr);
+      }
+    }
+
     res.json({
       success: true,
       count: events.length,

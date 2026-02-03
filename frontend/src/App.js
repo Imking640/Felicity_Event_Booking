@@ -6,6 +6,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Onboarding from './pages/Onboarding';
+import Profile from './pages/Profile';
 import Events from './pages/Events';
 import DashboardRouter from './pages/DashboardRouter';
 import CreateEvent from './pages/CreateEvent';
@@ -26,6 +28,22 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/events" element={<Events />} />
+            <Route 
+              path="/onboarding" 
+              element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/dashboard" 
               element={
