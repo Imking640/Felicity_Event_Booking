@@ -88,11 +88,38 @@ const Navbar = () => {
               </div>
               
               {user?.role === 'organizer' && (
-                <div style={{ transition: 'transform 0.3s ease' }}>
-                  <Link to="/create-event" style={navLinkStyle('/create-event')}>
-                    ➕ Create Event
-                  </Link>
-                </div>
+                <>
+                  <div style={{ transition: 'transform 0.3s ease' }}>
+                    <Link to="/create-event" style={navLinkStyle('/create-event')}>
+                      ➕ Create Event
+                    </Link>
+                  </div>
+                  <div style={{ transition: 'transform 0.3s ease' }}>
+                    <Link to="/organizer/events" style={navLinkStyle('/organizer/events')}>
+                      📅 Ongoing Events
+                    </Link>
+                  </div>
+                  <div style={{ transition: 'transform 0.3s ease' }}>
+                    <Link to="/organizer/profile" style={navLinkStyle('/organizer/profile')}>
+                      👤 Profile
+                    </Link>
+                  </div>
+                </>
+              )}
+
+              {user?.role === 'admin' && (
+                <>
+                  <div style={{ transition: 'transform 0.3s ease' }}>
+                    <Link to="/admin/manage-organizers" style={navLinkStyle('/admin/manage-organizers')}>
+                      👥 Manage Organizers
+                    </Link>
+                  </div>
+                  <div style={{ transition: 'transform 0.3s ease' }}>
+                    <Link to="/admin/password-resets" style={navLinkStyle('/admin/password-resets')}>
+                      🔑 Password Resets
+                    </Link>
+                  </div>
+                </>
               )}
               
               <div style={{
