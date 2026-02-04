@@ -17,6 +17,7 @@ const {
 // Public routes
 router.get('/', optionalAuth, getEvents);  // optionalAuth allows filtering based on user
 router.get('/:id', optionalAuth, getEventById);
+router.get('/trending/list', optionalAuth, require('../controllers/eventController').getTrendingEvents);
 
 // Protected routes - Organizer only
 router.post('/', verifyToken, isOrganizer, createEvent);

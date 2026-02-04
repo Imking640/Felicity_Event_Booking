@@ -6,8 +6,11 @@ import DiscoDecorations, { showDiscoToast, createConfetti } from '../components/
 
 const Events = () => {
   const [events, setEvents] = useState([]);
+  const [trending, setTrending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [search, setSearch] = useState('');
+  const [scopeFollowed, setScopeFollowed] = useState(false);
   const [registering, setRegistering] = useState(null);
   
   const { isAuthenticated, user } = useAuth();
@@ -15,17 +18,29 @@ const Events = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+    fetchTrending();
+  }, [selectedCategory, search, scopeFollowed]);
 
   const fetchEvents = async () => {
     try {
-      const response = await api.get('/events');
+      const params = new URLSearchParams();
+      if (selectedCategory !== 'All') params.append('type', selectedCategory);
+      if (search.trim()) params.append('search', search.trim());
+      if (scopeFollowed) params.append('scope', 'followed');
+      const response = await api.get(`/events?${params.toString()}`);
       setEvents(response.data.events || []);
       setLoading(false);
     } catch (err) {
       showDiscoToast('⚠️ Failed to load events', false);
       setLoading(false);
     }
+  };
+
+  const fetchTrending = async () => {
+    try {
+      const res = await api.get('/events/trending/list?limit=5');
+      setTrending(res.data.events || []);
+    } catch {}
   };
 
   const handleRegister = async (eventId) => {
@@ -140,7 +155,7 @@ const Events = () => {
         </p>
       </div>
 
-      {/* Category Filter */}
+      {/* Search and Filters */}
       <div style={{ 
         display: 'flex', 
         gap: '1rem', 
@@ -150,6 +165,13 @@ const Events = () => {
         position: 'relative',
         zIndex: 10
       }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search events or organizers..."
+          className="disco-input"
+          style={{ minWidth: 280 }}
+        />
         {categories.map(category => (
           <button
             key={category}
@@ -188,7 +210,25 @@ const Events = () => {
             {category}
           </button>
         ))}
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}>
+          <input type="checkbox" checked={scopeFollowed} onChange={e => setScopeFollowed(e.target.checked)} />
+          Followed Clubs Only
+        </label>
       </div>
+
+      {/* Trending */}
+      {trending.length > 0 && (
+        <div className="disco-card" style={{ padding: '1rem', margin: '0 auto 1.5rem', maxWidth: 1000 }}>
+          <h3 style={{ fontFamily: "'Bungee', cursive", color: '#ffff00', marginBottom: '0.5rem' }}>🔥 Trending (24h)</h3>
+          <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+            {trending.map(ev => (
+              <div key={ev._id} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.6rem 0.8rem', borderRadius: 10, color: '#fff' }}>
+                {ev.eventName} <span style={{ color: '#00ffff' }}>({ev.trendingCount24h})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Events Grid */}
       <div style={{ 

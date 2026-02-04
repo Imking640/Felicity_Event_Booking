@@ -16,6 +16,9 @@ import EventParticipants from './pages/EventParticipants';
 import EventDetailOrganizer from './pages/EventDetailOrganizer';
 import OrganizerProfile from './pages/OrganizerProfile';
 import ManageOrganizers from './pages/ManageOrganizers';
+import Tickets from './pages/Tickets';
+import OrganizersList from './pages/OrganizersList';
+import OrganizerView from './pages/OrganizerView';
 
 function App() {
   return (
@@ -45,6 +48,14 @@ function App() {
               } 
             />
             <Route 
+              path="/tickets" 
+              element={
+                <ProtectedRoute>
+                  <Tickets />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/dashboard" 
               element={
                 <ProtectedRoute>
@@ -52,6 +63,8 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route path="/organizers" element={<OrganizersList />} />
+            <Route path="/organizers/:id" element={<OrganizerView />} />
 
             <Route
               path="/create-event"

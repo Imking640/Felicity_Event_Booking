@@ -16,6 +16,8 @@ const Profile = () => {
   const [interests, setInterests] = useState([]);
   const [followed, setFollowed] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [pwd, setPwd] = useState({ oldPassword: '', newPassword: '' });
+  const [changing, setChanging] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'participant') return;
@@ -109,6 +111,25 @@ const Profile = () => {
               </label>
             ))}
             {organizers.length === 0 && <div style={{ color: '#ccc' }}>No organizers yet</div>}
+          </div>
+        </div>
+
+        <div className="disco-card" style={{ padding: '1.5rem', marginTop: '1.5rem' }}>
+          <h3 style={{ color: '#ff00ff', fontFamily: "'Bungee', cursive", marginBottom: '1rem' }}>Security Settings</h3>
+          <div style={{ display: 'grid', gap: '0.8rem', maxWidth: 400 }}>
+            <input className="disco-input" type="password" placeholder="Old Password" value={pwd.oldPassword} onChange={e=>setPwd({...pwd, oldPassword:e.target.value})} />
+            <input className="disco-input" type="password" placeholder="New Password" value={pwd.newPassword} onChange={e=>setPwd({...pwd, newPassword:e.target.value})} />
+            <button className="disco-button" disabled={changing} onClick={async ()=>{
+              setChanging(true);
+              try {
+                const res = await api.post('/auth/change-password', pwd);
+                if (res.data.success) {
+                  showDiscoToast('Password changed', true);
+                  setPwd({ oldPassword:'', newPassword:'' });
+                }
+              } catch (e) { showDiscoToast('Failed to change password', false); }
+              finally { setChanging(false); }
+            }}>{changing ? 'Updating...' : 'Change Password'}</button>
           </div>
         </div>
 
