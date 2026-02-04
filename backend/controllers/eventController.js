@@ -17,7 +17,8 @@ exports.getEvents = async (req, res) => {
       tags,        // Tags filter
       startDate,   // Filter by start date range
       endDate,
-      sortBy = 'eventStartDate',
+      scope,       // 'followed' to show only followed clubs for participants
+      sortBy = (req.user && req.user.role === 'participant') ? 'relevance' : 'eventStartDate',
       order = 'asc',
       page = 1,
       limit = 20
@@ -47,31 +48,127 @@ exports.getEvents = async (req, res) => {
       if (endDate) query.eventStartDate.$lte = new Date(endDate);
     }
     
-    // Search filter
-    if (search) {
-      query.$or = [
-        { eventName: { $regex: search, $options: 'i' } },
-        { eventDescription: { $regex: search, $options: 'i' } }
-      ];
-    }
+    // NOTE: For fuzzy search we won't filter at DB level; we'll score after fetch
+    const useDbSearch = !search; // if search provided, do fuzzy scoring client-side
     
     // Pagination
     const skip = (page - 1) * limit;
     
-    // Sort
+    // Always get with basic sort by date for stable ordering before relevance tweaks
     const sortOrder = order === 'desc' ? -1 : 1;
-    const sortObj = { [sortBy]: sortOrder };
-    
-    // Execute query
-    const events = await Event.find(query)
+    const baseSort = { eventStartDate: sortOrder };
+
+    // Execute base query
+    let eventsQuery = Event.find(query)
       .populate('organizer', 'organizerName email category')
-      .sort(sortObj)
+      .sort(baseSort);
+
+    // Scope: followed clubs only (participants)
+    if (scope === 'followed' && req.user && req.user.role === 'participant') {
+      try {
+        const { Participant } = require('../models/User');
+        const me = await Participant.findById(req.user.id).select('followedClubs');
+        const followedIds = (me?.followedClubs || []).map(id => String(id));
+        if (followedIds.length) {
+          eventsQuery = eventsQuery.where('organizer').in(followedIds);
+        } else {
+          // No followed clubs => empty result
+          return res.json({ success: true, count: 0, total: 0, page: parseInt(page), pages: 0, events: [] });
+        }
+      } catch (e) {
+        console.error('Followed scope error:', e);
+      }
+    }
+
+    let events = await eventsQuery
       .skip(skip)
       .limit(parseInt(limit));
     
     // Get total count for pagination
-    const total = await Event.countDocuments(query);
-    
+  const total = await Event.countDocuments(query);
+
+    // Fuzzy search scoring when search is provided
+    if (search) {
+      const sQuery = String(search).toLowerCase();
+      // Fetch a broader set to score correctly
+      const allEvents = await Event.find(query)
+        .populate('organizer', 'organizerName email category')
+        .sort(baseSort);
+
+      // Simple normalized Levenshtein-based score
+      const levenshtein = (a, b) => {
+        const m = a.length, n = b.length;
+        const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+        for (let i = 0; i <= m; i++) dp[i][0] = i;
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+        for (let i = 1; i <= m; i++) {
+          for (let j = 1; j <= n; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+              dp[i - 1][j] + 1,     // deletion
+              dp[i][j - 1] + 1,     // insertion
+              dp[i - 1][j - 1] + cost // substitution
+            );
+          }
+        }
+        return dp[m][n];
+      };
+      const normalizeScore = (dist, len) => 1 - Math.min(1, dist / Math.max(1, len));
+
+      const scored = allEvents.map(ev => {
+        const name = String(ev.eventName || '').toLowerCase();
+        const org = String(ev.organizer?.organizerName || '').toLowerCase();
+        const dName = levenshtein(sQuery, name);
+        const dOrg = levenshtein(sQuery, org);
+        // Exact/partial hits boost
+        let score = Math.max(normalizeScore(dName, name.length), normalizeScore(dOrg, org.length));
+        if (name.includes(sQuery)) score += 0.5;
+        if (org.includes(sQuery)) score += 0.5;
+        return { ev, score };
+      });
+
+      scored.sort((a, b) => b.score - a.score || new Date(a.ev.eventStartDate) - new Date(b.ev.eventStartDate));
+      const start = (page - 1) * limit;
+      events = scored.slice(start, start + parseInt(limit)).map(s => s.ev);
+    }
+
+    // Relevance sorting for participants based on interests & followed clubs
+    if (sortBy === 'relevance' && req.user && req.user.role === 'participant') {
+      try {
+        const { Participant } = require('../models/User');
+        const me = await Participant.findById(req.user.id).select('interests followedClubs');
+        if (me) {
+          const interests = new Set((me.interests || []).map(s => s.toLowerCase()));
+          const followed = new Set((me.followedClubs || []).map(id => String(id)));
+          // Re-fetch without pagination to score correctly, then paginate post-sort
+          const allEvents = await Event.find(query)
+            .populate('organizer', 'organizerName email category')
+            .sort(baseSort);
+
+          const scored = allEvents.map(ev => {
+            let score = 0;
+            // tag matches
+            if (Array.isArray(ev.tags) && interests.size) {
+              const hits = ev.tags.filter(t => interests.has(String(t).toLowerCase())).length;
+              score += hits * 2;
+            }
+            // organizer followed
+            if (ev.organizer && followed.has(String(ev.organizer._id))) {
+              score += 5;
+            }
+            return { ev, score };
+          });
+
+          scored.sort((a, b) => b.score - a.score || new Date(a.ev.eventStartDate) - new Date(b.ev.eventStartDate));
+          // apply pagination after relevance sort
+          const start = (page - 1) * limit;
+          events = scored.slice(start, start + parseInt(limit)).map(s => s.ev);
+        }
+      } catch (relevanceErr) {
+        console.error('Relevance sort error:', relevanceErr);
+      }
+    }
+
     res.json({
       success: true,
       count: events.length,
@@ -123,9 +220,23 @@ exports.getEventById = async (req, res) => {
       }
     }
     
+    // Enrich with computed flags and counts
+    const enriched = event.toObject();
+    enriched.isRegistrationOpen = event.isRegistrationOpen;
+    enriched.isFull = event.isFull;
+    enriched.blockReason = null;
+    if (!event.isRegistrationOpen) {
+      if (event.status !== 'published') enriched.blockReason = 'Event is not published';
+      else if (new Date() > event.registrationDeadline) enriched.blockReason = 'Registration deadline has passed';
+      else if (event.isFull) enriched.blockReason = 'Event has reached maximum registrations';
+      else if (event.eventType === 'Merchandise' && event.merchandiseDetails?.stockQuantity <= 0) enriched.blockReason = 'Item is out of stock';
+    }
+    enriched.currentRegistrations = event.currentRegistrations;
+    enriched.registrationLimit = event.registrationLimit;
+    
     res.json({
       success: true,
-      event
+      event: enriched
     });
   } catch (error) {
     console.error('Get event error:', error);
@@ -360,5 +471,40 @@ exports.publishEvent = async (req, res) => {
       message: 'Failed to publish event',
       error: error.message
     });
+  }
+};
+
+// @desc    Get trending events in the last 24 hours
+// @route   GET /api/events/trending
+// @access  Public
+exports.getTrendingEvents = async (req, res) => {
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const limit = parseInt(req.query.limit || '5');
+
+    // Aggregate registrations in last 24h grouped by event
+    const agg = await Registration.aggregate([
+      { $match: { registrationDate: { $gte: since } } },
+      { $group: { _id: '$event', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: limit }
+    ]);
+
+    const eventIds = agg.map(a => a._id);
+    const events = await Event.find({ _id: { $in: eventIds }, status: 'published' })
+      .populate('organizer', 'organizerName category')
+      .lean();
+
+    // Attach counts
+    const countMap = new Map(agg.map(a => [String(a._id), a.count]));
+    const trending = events.map(ev => ({
+      ...ev,
+      trendingCount24h: countMap.get(String(ev._id)) || 0
+    }));
+
+    res.json({ success: true, count: trending.length, events: trending });
+  } catch (error) {
+    console.error('Get trending events error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch trending events', error: error.message });
   }
 };

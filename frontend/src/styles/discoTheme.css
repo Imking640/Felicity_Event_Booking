@@ -1,6 +1,196 @@
 /* FELICITY 2026 - Retro Disco Theme */
 @import url('https://fonts.googleapis.com/css2?family=Bungee+Shade&family=Bungee&family=Anton&display=swap');
 
+/* Space Background Effect */
+body {
+  background: #0a0a1a;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Clean backdrop without visible tiling */
+  background: linear-gradient(180deg, rgba(5,5,20,0.85) 0%, rgba(10,10,25,0.9) 60%, rgba(15,15,30,0.95) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(ellipse at center, transparent 0%, rgba(10, 0, 30, 0.9) 100%),
+    linear-gradient(135deg, rgba(138, 43, 226, 0.1) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(30, 144, 255, 0.1) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes stars-twinkle {
+  0% { 
+    background-position: 0 0, 40px 60px, 130px 270px, 70px 100px, 250px 150px, 180px 300px, 320px 80px, 160px 230px;
+    opacity: 0.8;
+  }
+  50% { 
+    background-position: 100px 200px, 140px 260px, 230px 70px, 170px 300px, 350px 50px, 80px 200px, 420px 180px, 60px 130px;
+    opacity: 1;
+  }
+  100% { 
+    background-position: 0 0, 40px 60px, 130px 270px, 70px 100px, 250px 150px, 180px 300px, 320px 80px, 160px 230px;
+    opacity: 0.8;
+  }
+}
+
+/* Dense Starfield Layers (more stars) */
+.space-stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  /* High-density stars placed at varied positions to avoid grid look */
+  background:
+    radial-gradient(circle at 5% 10%, rgba(255,255,255,0.95) 1px, transparent 1.5px),
+    radial-gradient(circle at 12% 35%, rgba(255,255,255,0.8) 1px, transparent 1.5px),
+    radial-gradient(circle at 18% 70%, rgba(255,255,255,0.75) 1px, transparent 1.5px),
+    radial-gradient(circle at 25% 20%, rgba(255,255,255,0.9) 1px, transparent 1.5px),
+    radial-gradient(circle at 33% 55%, rgba(255,255,255,0.85) 1px, transparent 1.5px),
+    radial-gradient(circle at 40% 85%, rgba(255,255,255,0.8) 1px, transparent 1.5px),
+    radial-gradient(circle at 47% 30%, rgba(255,255,255,0.95) 1px, transparent 1.5px),
+    radial-gradient(circle at 55% 65%, rgba(255,255,255,0.85) 1px, transparent 1.5px),
+    radial-gradient(circle at 62% 15%, rgba(255,255,255,0.9) 1px, transparent 1.5px),
+    radial-gradient(circle at 68% 45%, rgba(255,255,255,0.75) 1px, transparent 1.5px),
+    radial-gradient(circle at 73% 80%, rgba(255,255,255,0.85) 1px, transparent 1.5px),
+    radial-gradient(circle at 80% 25%, rgba(255,255,255,0.95) 1px, transparent 1.5px),
+    radial-gradient(circle at 88% 60%, rgba(255,255,255,0.8) 1px, transparent 1.5px),
+    radial-gradient(circle at 95% 35%, rgba(255,255,255,0.9) 1px, transparent 1.5px),
+    radial-gradient(circle at 10% 90%, rgba(255,255,255,0.8) 1px, transparent 1.5px),
+    radial-gradient(circle at 22% 88%, rgba(255,255,255,0.7) 1px, transparent 1.5px),
+    radial-gradient(circle at 37% 92%, rgba(255,255,255,0.8) 1px, transparent 1.5px),
+    radial-gradient(circle at 52% 90%, rgba(255,255,255,0.85) 1px, transparent 1.5px),
+    radial-gradient(circle at 67% 88%, rgba(255,255,255,0.75) 1px, transparent 1.5px),
+    radial-gradient(circle at 82% 92%, rgba(255,255,255,0.8) 1px, transparent 1.5px),
+    radial-gradient(circle at 92% 88%, rgba(255,255,255,0.85) 1px, transparent 1.5px),
+    radial-gradient(circle at 15% 5%, rgba(255,255,255,0.8) 1px, transparent 1.5px),
+    radial-gradient(circle at 45% 8%, rgba(255,255,255,0.9) 1px, transparent 1.5px),
+    radial-gradient(circle at 75% 6%, rgba(255,255,255,0.8) 1px, transparent 1.5px);
+  animation: star-drift 140s linear infinite;
+  opacity: 0.9;
+}
+
+.space-stars.layer2 {
+  background:
+    radial-gradient(circle at 8% 18%, rgba(255,255,255,0.8) 1px, transparent 1.6px),
+    radial-gradient(circle at 18% 42%, rgba(255,255,255,0.7) 1px, transparent 1.6px),
+    radial-gradient(circle at 28% 76%, rgba(255,255,255,0.75) 1px, transparent 1.6px),
+    radial-gradient(circle at 38% 24%, rgba(255,255,255,0.8) 1px, transparent 1.6px),
+    radial-gradient(circle at 48% 58%, rgba(255,255,255,0.85) 1px, transparent 1.6px),
+    radial-gradient(circle at 58% 12%, rgba(255,255,255,0.8) 1px, transparent 1.6px),
+    radial-gradient(circle at 68% 44%, rgba(255,255,255,0.75) 1px, transparent 1.6px),
+    radial-gradient(circle at 78% 70%, rgba(255,255,255,0.8) 1px, transparent 1.6px),
+    radial-gradient(circle at 88% 30%, rgba(255,255,255,0.85) 1px, transparent 1.6px),
+    radial-gradient(circle at 96% 52%, rgba(255,255,255,0.75) 1px, transparent 1.6px);
+  animation: star-drift-reverse 180s linear infinite;
+  opacity: 0.5;
+}
+
+.space-twinkle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.7) 0.6px, transparent 1px);
+  background-size: 4px 4px;
+  animation: twinkle 4s ease-in-out infinite;
+  mix-blend-mode: screen;
+  opacity: 0.18;
+}
+
+.space-nebula {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(255,0,255,0.065), transparent 60%),
+    radial-gradient(ellipse at 70% 60%, rgba(0,255,255,0.065), transparent 55%),
+    radial-gradient(ellipse at 50% 20%, rgba(255,255,0,0.05), transparent 65%);
+  filter: blur(30px);
+  animation: nebula-flow 60s ease-in-out infinite alternate;
+}
+
+@keyframes star-drift {
+  from { transform: translateX(0) translateY(0); }
+  to { transform: translateX(-200px) translateY(120px); }
+}
+
+@keyframes star-drift-reverse {
+  from { transform: translateX(0) translateY(0); }
+  to { transform: translateX(180px) translateY(-100px); }
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.12; }
+  50% { opacity: 0.26; }
+  100% { opacity: 0.12; }
+}
+
+@keyframes nebula-flow {
+  0% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.05) translateY(-10px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+/* Shooting stars */
+.shooting-star {
+  position: fixed;
+  width: 2px;
+  height: 2px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
+  animation: shooting 3s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes shooting {
+  0% {
+    transform: translateX(0) translateY(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-500px) translateY(300px);
+    opacity: 0;
+  }
+}
+
+/* Ensure content is above background */
+#root, .App {
+  position: relative;
+  z-index: 1;
+}
+
 /* Custom Cursor */
 body {
   cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="8" fill="%23ff00ff" opacity="0.8"/><circle cx="12" cy="12" r="3" fill="white"/></svg>') 12 12, auto;

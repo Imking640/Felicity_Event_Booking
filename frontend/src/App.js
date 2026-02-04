@@ -6,6 +6,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Onboarding from './pages/Onboarding';
+import Profile from './pages/Profile';
 import Events from './pages/Events';
 import DashboardRouter from './pages/DashboardRouter';
 import CreateEvent from './pages/CreateEvent';
@@ -14,6 +16,9 @@ import EventParticipants from './pages/EventParticipants';
 import EventDetailOrganizer from './pages/EventDetailOrganizer';
 import OrganizerProfile from './pages/OrganizerProfile';
 import ManageOrganizers from './pages/ManageOrganizers';
+import Tickets from './pages/Tickets';
+import OrganizersList from './pages/OrganizersList';
+import OrganizerView from './pages/OrganizerView';
 
 function App() {
   return (
@@ -27,6 +32,30 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/events" element={<Events />} />
             <Route 
+              path="/onboarding" 
+              element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/tickets" 
+              element={
+                <ProtectedRoute>
+                  <Tickets />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/dashboard" 
               element={
                 <ProtectedRoute>
@@ -34,6 +63,8 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route path="/organizers" element={<OrganizersList />} />
+            <Route path="/organizers/:id" element={<OrganizerView />} />
 
             <Route
               path="/create-event"

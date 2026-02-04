@@ -67,8 +67,8 @@ const Register = () => {
     
     if (result.success) {
       createConfetti();
-      showDiscoToast('🎉 Registration successful! Welcome to the party!', true);
-      setTimeout(() => navigate('/dashboard'), 1000);
+      showDiscoToast('🎉 Registration successful! Let\'s personalize your feed!', true);
+      setTimeout(() => navigate('/onboarding'), 600);
     } else {
       showDiscoToast('⚠️ ' + result.message, false);
     }
@@ -86,63 +86,10 @@ const Register = () => {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Disco Decorations */}
+      {/* Space-only decorations */}
       <DiscoDecorations />
 
-      {/* Additional floating elements */}
-      <div style={{
-        position: 'absolute',
-        top: '12%',
-        left: '10%',
-        fontSize: '4rem',
-        animation: 'float-disco 4s ease-in-out infinite',
-        opacity: 0.7,
-        zIndex: 5
-      }}>🎉</div>
-
-      <div style={{
-        position: 'absolute',
-        top: '55%',
-        right: '8%',
-        fontSize: '3.5rem',
-        animation: 'float-disco 5s ease-in-out infinite',
-        animationDelay: '1s',
-        opacity: 0.7,
-        zIndex: 5
-      }}>🎊</div>
-
-      <div style={{
-        position: 'absolute',
-        bottom: '18%',
-        left: '15%',
-        fontSize: '3rem',
-        animation: 'float-disco 4.5s ease-in-out infinite',
-        animationDelay: '2s',
-        opacity: 0.7,
-        zIndex: 5
-      }}>⚡</div>
-
-      <div style={{
-        position: 'absolute',
-        top: '30%',
-        right: '12%',
-        fontSize: '2.5rem',
-        animation: 'spin-vinyl 8s linear infinite',
-        opacity: 0.6,
-        zIndex: 5
-      }}>🎸</div>
-
-      <div style={{
-        position: 'absolute',
-        bottom: '30%',
-        right: '10%',
-        fontSize: '3rem',
-        animation: 'pulse-star 3s ease-in-out infinite',
-        opacity: 0.7,
-        zIndex: 5
-      }}>🎤</div>
-
-      <div className="disco-card" style={{ padding: '3rem', maxWidth: '550px', width: '100%', zIndex: 10 }}>
+      <div className="disco-card" style={{ padding: '2rem', maxWidth: '980px', width: '100%', zIndex: 10 }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <div className="logo-disco" style={{ margin: '0 auto 2rem' }} />
           <h2 style={{ 
@@ -167,7 +114,8 @@ const Register = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+          {/* Left column */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label className="disco-label">👤 FIRST NAME</label>
@@ -198,7 +146,7 @@ const Register = () => {
             </div>
           </div>
 
-          <div>
+          <div style={{ marginTop: '0.5rem' }}>
             <label className="disco-label">📧 EMAIL ADDRESS</label>
             <input
               type="email"
@@ -222,7 +170,7 @@ const Register = () => {
             )}
           </div>
 
-          <div>
+          <div style={{ marginTop: '0.5rem' }}>
             <label className="disco-label">🎓 PARTICIPANT TYPE</label>
             <select
               name="participantType"
@@ -238,7 +186,7 @@ const Register = () => {
           </div>
 
           {formData.participantType === 'Non-IIIT' && (
-            <div>
+            <div style={{ marginTop: '0.5rem' }}>
               <label className="disco-label">🏫 COLLEGE NAME</label>
               <input
                 type="text"
@@ -253,6 +201,7 @@ const Register = () => {
             </div>
           )}
 
+          {/* Right column */}
           <div>
             <label className="disco-label">📱 CONTACT NUMBER</label>
             <input
@@ -269,7 +218,7 @@ const Register = () => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
             <div>
               <label className="disco-label">🔒 PASSWORD</label>
               <input
@@ -300,14 +249,16 @@ const Register = () => {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="disco-button"
-            style={{ width: '100%' }}
-          >
-            {loading ? '⏳ CREATING ACCOUNT...' : '✨ JOIN THE FEST!'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <button
+              type="submit"
+              disabled={loading}
+              className="disco-button"
+              style={{ width: '100%' }}
+            >
+              {loading ? '⏳ CREATING ACCOUNT...' : '✨ JOIN THE FEST!'}
+            </button>
+          </div>
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '2px solid rgba(0, 255, 255, 0.3)' }}>

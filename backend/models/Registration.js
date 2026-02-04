@@ -17,7 +17,7 @@ const registrationSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'cancelled', 'rejected', 'completed'],
-    default: 'confirmed'
+    default: 'pending'
   },
   
   // For Normal Events - Custom Form Data

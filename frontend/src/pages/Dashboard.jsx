@@ -1,11 +1,41 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import DiscoDecorations from '../components/DiscoDecorations';
+import api from '../services/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get('/registrations/summary');
+        setSummary(res.data.summary || null);
+      } catch (e) {
+        // silent fail on dashboard
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user?.role === 'participant') load();
+  }, [user]);
+
+  const stats = useMemo(() => {
+    const all = summary ? [
+      ...summary.normal,
+      ...summary.merchandise,
+      ...summary.completed,
+      ...summary.cancelledRejected
+    ] : [];
+    const registered = all.length;
+    const attended = all.filter(r => r.attended).length;
+    const totalSpent = all.reduce((sum, r) => sum + (r.amountPaid || 0), 0);
+    return { registered, attended, totalSpent };
+  }, [summary]);
 
   return (
     <div style={{ 
@@ -202,14 +232,15 @@ const Dashboard = () => {
 
       {/* Quick Actions */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '2rem',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '1.5rem',
         marginBottom: '2rem',
         position: 'relative',
-        zIndex: 10
+        zIndex: 10,
+        justifyContent: 'center'
       }}>
-        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', flex: '1 1 300px', maxWidth: '400px' }}>
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎭</div>
           <h3 style={{
             color: '#ff00ff',
@@ -237,7 +268,7 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', flex: '1 1 300px', maxWidth: '400px' }}>
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎫</div>
           <h3 style={{
             color: '#00ffff',
@@ -264,7 +295,7 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', flex: '1 1 300px', maxWidth: '400px' }}>
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⚙️</div>
           <h3 style={{
             color: '#ffff00',
@@ -286,6 +317,7 @@ const Dashboard = () => {
           <button
             className="disco-button"
             style={{ width: '100%' }}
+            onClick={() => navigate('/profile')}
           >
             ✏️ UPDATE INFO
           </button>
@@ -322,7 +354,7 @@ const Dashboard = () => {
               marginBottom: '0.5rem',
               fontFamily: "'Bungee', cursive"
             }}>
-              0
+              {stats.registered || 0}
             </h3>
             <p style={{
               color: '#fff',
@@ -342,7 +374,7 @@ const Dashboard = () => {
               marginBottom: '0.5rem',
               fontFamily: "'Bungee', cursive"
             }}>
-              0
+              {stats.attended || 0}
             </h3>
             <p style={{
               color: '#fff',
@@ -362,7 +394,7 @@ const Dashboard = () => {
               marginBottom: '0.5rem',
               fontFamily: "'Bungee', cursive"
             }}>
-              ₹0
+              ₹{stats.totalSpent || 0}
             </h3>
             <p style={{
               color: '#fff',
@@ -376,6 +408,40 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Upcoming Events preview */}
+      {user?.role === 'participant' && (
+        <div className="disco-card" style={{ padding: '2rem', marginTop: '1.5rem' }}>
+          <h2 style={{
+            fontSize: '1.6rem',
+            marginBottom: '1rem',
+            color: '#ff00ff',
+            fontFamily: "'Bungee', cursive",
+            textShadow: '0 0 15px rgba(255, 0, 255, 0.6)'
+          }}>
+            ⏰ Upcoming Events
+          </h2>
+          {loading ? (
+            <div style={{ color: '#ccc' }}>Loading...</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+              {(summary?.upcoming || []).slice(0, 6).map(item => (
+                <div key={item._id} className="event-card-disco" style={{ padding: '1rem' }}>
+                  <div style={{ fontFamily: "'Bungee', cursive", color: '#ffff00' }}>{item.event?.eventName}</div>
+                  <div style={{ color: '#00ffff', fontFamily: "'Anton', sans-serif" }}>{item.event?.eventType} • {item.event?.organizer?.organizerName || 'Organizer'}</div>
+                  <div style={{ color: '#fff', fontSize: '0.9rem' }}>{new Date(item.event?.eventStartDate).toLocaleString()}</div>
+                </div>
+              ))}
+              {(summary?.upcoming || []).length === 0 && (
+                <div style={{ color: '#ccc' }}>No upcoming events yet</div>
+              )}
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <button className="disco-button" onClick={() => navigate('/tickets')}>View Tickets</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
