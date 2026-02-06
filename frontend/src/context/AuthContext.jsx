@@ -13,15 +13,17 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Check if user is logged in on mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
     
-    if (token && savedUser) {
+    if (savedToken && savedUser) {
+      setToken(savedToken);
       setUser(JSON.parse(savedUser));
       setIsAuthenticated(true);
     }
@@ -32,11 +34,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, recaptchaToken) => {
     try {
       const response = await api.post('/auth/login', { email, password, recaptchaToken });
-      const { token, user } = response.data;
+      const { token: newToken, user } = response.data;
       
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(user));
       
+      setToken(newToken);
       setUser(user);
       setIsAuthenticated(true);
       
@@ -53,11 +56,12 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await api.post('/auth/register', userData);
-      const { token, user } = response.data;
+      const { token: newToken, user } = response.data;
       
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(user));
       
+      setToken(newToken);
       setUser(user);
       setIsAuthenticated(true);
       
@@ -74,12 +78,14 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    setToken(null);
     setUser(null);
     setIsAuthenticated(false);
   };
 
   const value = {
     user,
+    token,
     isAuthenticated,
     loading,
     login,

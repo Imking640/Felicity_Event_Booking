@@ -10,6 +10,7 @@ const AttendanceScanner = () => {
   const [event, setEvent] = useState(null);
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [scannerActive, setScannerActive] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [manualTicketId, setManualTicketId] = useState('');
@@ -19,12 +20,23 @@ const AttendanceScanner = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (eventId) {
+    if (eventId && token) {
       fetchEventDetails();
       fetchAttendance();
+    } else if (!eventId) {
+      setLoading(false);
+    } else if (!token) {
+      // Token not yet available, wait a bit then check again
+      const timeout = setTimeout(() => {
+        if (!token) {
+          setError('Please login to access this page');
+          setLoading(false);
+        }
+      }, 2000);
+      return () => clearTimeout(timeout);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId]);
+  }, [eventId, token]);
 
   useEffect(() => {
     return () => {
@@ -35,6 +47,7 @@ const AttendanceScanner = () => {
   }, []);
 
   const fetchEventDetails = async () => {
+    console.log('Fetching event details for:', eventId, 'with token:', token ? 'present' : 'missing');
     try {
       const response = await fetch(`http://localhost:5000/api/events/${eventId}`, {
         headers: {
@@ -42,15 +55,22 @@ const AttendanceScanner = () => {
         }
       });
       const data = await response.json();
+      console.log('Event fetch response:', data);
       if (data.success) {
         setEvent(data.event);
+      } else {
+        setError(data.message || 'Event not found');
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error fetching event:', error);
+      setError('Failed to load event');
+      setLoading(false);
     }
   };
 
   const fetchAttendance = async () => {
+    console.log('Fetching attendance for:', eventId);
     try {
       const response = await fetch(`http://localhost:5000/api/events/${eventId}/attendance`, {
         headers: {
@@ -58,12 +78,17 @@ const AttendanceScanner = () => {
         }
       });
       const data = await response.json();
+      console.log('Attendance fetch response:', data);
       if (data.success) {
         setAttendance(data);
+      } else {
+        console.error('Attendance fetch failed:', data.message);
+        // Not an error if event exists but no attendance data yet
       }
     } catch (error) {
       console.error('Error fetching attendance:', error);
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   };
@@ -112,9 +137,20 @@ const AttendanceScanner = () => {
     setScanResult(null);
 
     try {
+      // Create a temporary div for the scanner if it doesn't exist
+      let scannerDiv = document.getElementById('qr-reader-upload');
+      if (!scannerDiv) {
+        scannerDiv = document.createElement('div');
+        scannerDiv.id = 'qr-reader-upload';
+        scannerDiv.style.display = 'none';
+        document.body.appendChild(scannerDiv);
+      }
+
       const html5QrCode = new Html5Qrcode("qr-reader-upload");
       
+      console.log('Scanning file:', file.name, file.type, file.size);
       const decodedText = await html5QrCode.scanFile(file, true);
+      console.log('Decoded QR text:', decodedText);
       
       // Process the scanned QR code
       await handleScan(decodedText);
@@ -232,6 +268,36 @@ const AttendanceScanner = () => {
     );
   }
 
+  if (error || !eventId) {
+    return (
+      <div style={{ 
+        minHeight: '80vh', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        color: '#fff',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <div style={{ fontSize: '1.2rem', color: '#ff6b6b' }}>{error || 'Event not found'}</div>
+        <button
+          onClick={() => navigate('/organizer/ongoing-events')}
+          style={{
+            background: 'linear-gradient(135deg, #ff006e 0%, #ffbe0b 100%)',
+            border: 'none',
+            color: '#000',
+            padding: '0.8rem 1.5rem',
+            borderRadius: '25px',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}
+        >
+          Go to Ongoing Events
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       maxWidth: '1600px',
@@ -239,6 +305,9 @@ const AttendanceScanner = () => {
       padding: '2rem',
       color: '#fff'
     }}>
+      {/* Hidden div for QR upload scanner */}
+      <div id="qr-reader-upload" style={{ display: 'none' }}></div>
+      
       {/* Header */}
       <div style={{
         marginBottom: '2rem',
@@ -280,70 +349,84 @@ const AttendanceScanner = () => {
       </div>
 
       {/* Stats Dashboard */}
-      {view === 'dashboard' && attendance && (
+      {view === 'dashboard' && (
         <>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '1.5rem',
-            marginBottom: '2rem'
-          }}>
+          {attendance ? (
             <div style={{
-              background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(0, 200, 100, 0.2) 100%)',
-              padding: '2rem',
-              borderRadius: '20px',
-              border: '2px solid rgba(0, 255, 136, 0.3)',
-              backdropFilter: 'blur(10px)'
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1.5rem',
+              marginBottom: '2rem'
             }}>
-              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>✅</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#00ff88' }}>
-                {attendance.stats.attended}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(0, 200, 100, 0.2) 100%)',
+                padding: '2rem',
+                borderRadius: '20px',
+                border: '2px solid rgba(0, 255, 136, 0.3)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>✅</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#00ff88' }}>
+                  {attendance.stats.attended}
+                </div>
+                <div style={{ color: '#ddd' }}>Attended</div>
               </div>
-              <div style={{ color: '#ddd' }}>Attended</div>
-            </div>
 
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(255, 255, 0, 0.2) 0%, rgba(255, 190, 11, 0.2) 100%)',
+                padding: '2rem',
+                borderRadius: '20px',
+                border: '2px solid rgba(255, 255, 0, 0.3)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>⏳</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#ffff00' }}>
+                  {attendance.stats.notAttended}
+                </div>
+                <div style={{ color: '#ddd' }}>Not Yet Scanned</div>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(0, 200, 255, 0.2) 100%)',
+                padding: '2rem',
+                borderRadius: '20px',
+                border: '2px solid rgba(0, 255, 255, 0.3)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📊</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#00ffff' }}>
+                  {attendance.stats.attendanceRate}%
+                </div>
+                <div style={{ color: '#ddd' }}>Attendance Rate</div>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(255, 0, 255, 0.2) 0%, rgba(200, 0, 200, 0.2) 100%)',
+                padding: '2rem',
+                borderRadius: '20px',
+                border: '2px solid rgba(255, 0, 255, 0.3)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👥</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#ff00ff' }}>
+                  {attendance.stats.totalRegistered}
+                </div>
+                <div style={{ color: '#ddd' }}>Total Registered</div>
+              </div>
+            </div>
+          ) : (
             <div style={{
-              background: 'linear-gradient(135deg, rgba(255, 255, 0, 0.2) 0%, rgba(255, 190, 11, 0.2) 100%)',
+              background: 'rgba(255, 255, 0, 0.1)',
               padding: '2rem',
               borderRadius: '20px',
               border: '2px solid rgba(255, 255, 0, 0.3)',
-              backdropFilter: 'blur(10px)'
+              marginBottom: '2rem',
+              textAlign: 'center'
             }}>
-              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>⏳</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#ffff00' }}>
-                {attendance.stats.notAttended}
-              </div>
-              <div style={{ color: '#ddd' }}>Not Yet Scanned</div>
+              <p style={{ color: '#ffff00', marginBottom: '0.5rem' }}>⚠️ No registrations found for this event yet.</p>
+              <p style={{ color: '#ddd' }}>You can still use the scanner to mark attendance once participants register.</p>
             </div>
-
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(0, 200, 255, 0.2) 100%)',
-              padding: '2rem',
-              borderRadius: '20px',
-              border: '2px solid rgba(0, 255, 255, 0.3)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📊</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#00ffff' }}>
-                {attendance.stats.attendanceRate}%
-              </div>
-              <div style={{ color: '#ddd' }}>Attendance Rate</div>
-            </div>
-
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(255, 0, 255, 0.2) 0%, rgba(200, 0, 200, 0.2) 100%)',
-              padding: '2rem',
-              borderRadius: '20px',
-              border: '2px solid rgba(255, 0, 255, 0.3)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👥</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#ff00ff' }}>
-                {attendance.stats.totalRegistered}
-              </div>
-              <div style={{ color: '#ddd' }}>Total Registered</div>
-            </div>
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div style={{
