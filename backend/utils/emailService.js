@@ -15,14 +15,40 @@ const createTransporter = () => {
 
 /**
  * Send ticket email to participant
- * @param {Object} participant - Participant user object
- * @param {Object} event - Event object
- * @param {Object} ticket - Ticket object with QR code
+ * @param {Object|string} participantOrEmail - Participant user object OR email string
+ * @param {Object|string} eventOrName - Event object OR participant name (if first param is email)
+ * @param {Object} ticketOrEvent - Ticket object OR Event object (if first param is email)
+ * @param {Object} [ticket] - Ticket object (if first param is email)
  * @returns {Promise<Object>} Email send result
  */
-const sendTicketEmail = async (participant, event, ticket) => {
+const sendTicketEmail = async (participantOrEmail, eventOrName, ticketOrEvent, ticket) => {
   try {
     const transporter = createTransporter();
+    
+    // Handle both calling conventions:
+    // Old: sendTicketEmail(participant, event, ticket)
+    // New: sendTicketEmail(email, name, event, ticket)
+    let recipientEmail, recipientName, event, ticketData;
+    
+    if (typeof participantOrEmail === 'string') {
+      // New format: (email, name, event, ticket)
+      recipientEmail = participantOrEmail;
+      recipientName = eventOrName || 'Participant';
+      event = ticketOrEvent;
+      ticketData = ticket;
+    } else {
+      // Old format: (participant, event, ticket)
+      recipientEmail = participantOrEmail?.email;
+      recipientName = `${participantOrEmail?.firstName || ''} ${participantOrEmail?.lastName || ''}`.trim() || 'Participant';
+      event = eventOrName;
+      ticketData = ticketOrEvent;
+    }
+    
+    if (!recipientEmail) {
+      throw new Error('Recipient email is required');
+    }
+    
+    console.log('Sending ticket email to:', recipientEmail);
     
     // Email HTML template
     const htmlContent = `
@@ -53,7 +79,7 @@ const sendTicketEmail = async (participant, event, ticket) => {
           </div>
           
           <div class="content">
-            <p>Dear ${participant.firstName} ${participant.lastName},</p>
+            <p>Dear ${recipientName},</p>
             
             <p>Thank you for registering! Your ticket has been generated successfully.</p>
             
@@ -61,11 +87,11 @@ const sendTicketEmail = async (participant, event, ticket) => {
               <h2 style="color: #667eea; margin-top: 0;">Your Ticket</h2>
               
               <div class="qr-code">
-                <img src="${ticket.qrCode}" alt="Ticket QR Code" style="max-width: 100%; height: auto;" />
+                <img src="${ticketData.qrCode}" alt="Ticket QR Code" style="max-width: 100%; height: auto;" />
               </div>
               
               <div class="info-row">
-                <span class="label">Ticket ID:</span> ${ticket.ticketId}
+                <span class="label">Ticket ID:</span> ${ticketData.ticketId}
               </div>
               
               <div class="info-row">
@@ -126,13 +152,13 @@ const sendTicketEmail = async (participant, event, ticket) => {
     // Email options
     const mailOptions = {
       from: `"Felicity Events" <${process.env.EMAIL_USER}>`,
-      to: participant.email,
+      to: recipientEmail,
       subject: `🎫 Your Ticket for ${event.eventName}`,
       html: htmlContent,
       attachments: [
         {
-          filename: `ticket-${ticket.ticketId}.png`,
-          path: ticket.qrCode,
+          filename: `ticket-${ticketData.ticketId}.png`,
+          path: ticketData.qrCode,
           cid: 'qrcode'
         }
       ]
@@ -145,7 +171,7 @@ const sendTicketEmail = async (participant, event, ticket) => {
     
     // Update ticket to mark email as sent
     const Ticket = require('../models/Ticket');
-    await Ticket.findByIdAndUpdate(ticket._id, {
+    await Ticket.findByIdAndUpdate(ticketData._id, {
       emailSent: true,
       emailSentAt: Date.now()
     });
