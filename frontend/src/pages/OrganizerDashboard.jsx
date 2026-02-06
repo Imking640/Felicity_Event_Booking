@@ -122,6 +122,36 @@ const OrganizerDashboard = () => {
           </div>
         </div>
 
+        {/* Quick Actions */}
+        <div className="disco-card" style={{ padding: '2rem', marginBottom: '2rem' }}>
+          <h2 style={{ fontFamily: "'Bungee', cursive", color: '#00ffff', marginBottom: '1.5rem' }}>
+            ⚡ Quick Actions
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+            <button 
+              className="disco-button" 
+              onClick={() => navigate('/create-event')}
+              style={{ padding: '1.5rem', fontSize: '1.1rem' }}
+            >
+              ➕ Create New Event
+            </button>
+            <button 
+              className="disco-button" 
+              onClick={() => navigate('/organizer/payment-approvals')}
+              style={{ padding: '1.5rem', fontSize: '1.1rem' }}
+            >
+              💳 Payment Approvals
+            </button>
+            <button 
+              className="disco-button" 
+              onClick={() => navigate('/organizer/profile')}
+              style={{ padding: '1.5rem', fontSize: '1.1rem' }}
+            >
+              👤 Edit Profile
+            </button>
+          </div>
+        </div>
+
         {/* Events Carousel */}
         <div className="disco-card" style={{ padding: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>

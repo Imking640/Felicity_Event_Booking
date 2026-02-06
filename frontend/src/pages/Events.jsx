@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import DiscoDecorations, { showDiscoToast, createConfetti } from '../components/DiscoDecorations';
+import DiscoDecorations, { showDiscoToast } from '../components/DiscoDecorations';
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -11,7 +11,6 @@ const Events = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [scopeFollowed, setScopeFollowed] = useState(false);
-  const [registering, setRegistering] = useState(null);
   
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -19,6 +18,7 @@ const Events = () => {
   useEffect(() => {
     fetchEvents();
     fetchTrending();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory, search, scopeFollowed]);
 
   const fetchEvents = async () => {
@@ -55,32 +55,11 @@ const Events = () => {
       return;
     }
 
-    setRegistering(eventId);
-
-    try {
-      const response = await api.post(`/events/${eventId}/register`);
-      
-      if (response.data.success) {
-        createConfetti();
-        showDiscoToast('🎉 Successfully registered for the event!', true);
-        
-        setEvents(prevEvents =>
-          prevEvents.map(event =>
-            event._id === eventId
-              ? { ...event, currentRegistrations: (event.currentRegistrations || 0) + 1 }
-              : event
-          )
-        );
-      }
-    } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Failed to register for event';
-      showDiscoToast('⚠️ ' + errorMsg, false);
-    } finally {
-      setRegistering(null);
-    }
+    // Navigate to registration page
+    navigate(`/events/${eventId}/register`);
   };
 
-  const categories = ['All', 'Technical', 'Cultural', 'Sports', 'Workshop', 'Normal'];
+  const categories = ['All', 'Normal', 'Merchandise'];
   
   const filteredEvents = selectedCategory === 'All' 
     ? events 
@@ -88,11 +67,8 @@ const Events = () => {
 
   const getEventEmoji = (type) => {
     const emojis = {
-      'Technical': '💻',
-      'Cultural': '🎭',
-      'Sports': '⚽',
-      'Workshop': '🛠️',
-      'Competition': '🏆'
+      'Normal': '�',
+      'Merchandise': '�️'
     };
     return emojis[type] || '🎪';
   };
@@ -355,7 +331,6 @@ const Events = () => {
               <button
                 onClick={() => handleRegister(event._id)}
                 disabled={
-                  registering === event._id || 
                   (user && user.role !== 'participant') ||
                   event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) ||
                   !event.isRegistrationOpen
@@ -367,9 +342,7 @@ const Events = () => {
                   cursor: ((user && user.role !== 'participant') || event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen) ? 'not-allowed' : 'pointer'
                 }}
               >
-                {registering === event._id 
-                  ? '⏳ REGISTERING...'
-                  : (user && user.role !== 'participant')
+                {(user && user.role !== 'participant')
                   ? '🔒 PARTICIPANTS ONLY'
                   : !event.isRegistrationOpen
                   ? '🔒 REGISTRATION CLOSED'

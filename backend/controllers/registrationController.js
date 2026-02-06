@@ -411,12 +411,13 @@ exports.uploadPaymentProof = async (req, res) => {
   // Normalize body and store payment proof (file path or URL)
   const body = req.body || {};
   registration.paymentProof = body.paymentProof || req.file?.path;
-    registration.paymentStatus = 'pending';
+    registration.paymentProofStatus = 'pending';
+    registration.paymentProofUploadedAt = Date.now();
     await registration.save();
     
     res.json({
       success: true,
-      message: 'Payment proof uploaded. Waiting for verification.',
+      message: 'Payment proof uploaded. Waiting for organizer approval.',
       registration
     });
   } catch (error) {
@@ -481,7 +482,8 @@ exports.getRegistrationTicket = async (req, res) => {
 exports.verifyPayment = async (req, res) => {
   try {
     const registration = await Registration.findById(req.params.id)
-      .populate('event');
+      .populate('event')
+      .populate('participant', 'email firstName');
     
     if (!registration) {
       return res.status(404).json({
@@ -502,7 +504,21 @@ exports.verifyPayment = async (req, res) => {
     
     if (approved) {
       registration.paymentStatus = 'paid';
+      registration.paymentProofStatus = 'approved';
       registration.status = 'confirmed';
+      registration.paymentApprovedAt = Date.now();
+      registration.paymentApprovedBy = req.user.id;
+      
+      // For merchandise, decrement stock
+      if (registration.event.eventType === 'Merchandise') {
+        const qty = registration.merchandiseDetails?.quantity || 1;
+        registration.event.merchandiseDetails.stockQuantity = Math.max(
+          0,
+          (registration.event.merchandiseDetails.stockQuantity || 0) - qty
+        );
+        await registration.event.save();
+      }
+      
       await registration.save();
       
       // Generate and send ticket
@@ -510,24 +526,21 @@ exports.verifyPayment = async (req, res) => {
         const ticket = await createTicket(
           registration._id,
           registration.event._id,
-          registration.participant,
+          registration.participant._id,
           registration.event.eventEndDate
         );
         
-        // Get participant details
-        const participant = await require('../models/User').findById(registration.participant);
-        
         // Send ticket via email
         await sendTicketEmail(
-          participant.email,
-          participant.firstName || 'Participant',
+          registration.participant.email,
+          registration.participant.firstName || 'Participant',
           registration.event,
           ticket
         );
         
         return res.json({
           success: true,
-          message: 'Payment verified and ticket sent',
+          message: 'Payment approved and ticket sent',
           registration,
           ticket
         });
@@ -535,12 +548,13 @@ exports.verifyPayment = async (req, res) => {
         console.error('Ticket generation error:', ticketError);
         return res.json({
           success: true,
-          message: 'Payment verified. Ticket will be sent shortly.',
+          message: 'Payment approved. Ticket will be sent shortly.',
           registration
         });
       }
     } else {
-      registration.paymentStatus = 'rejected';
+      registration.paymentProofStatus = 'rejected';
+      registration.status = 'rejected';
       await registration.save();
       
       res.json({
@@ -554,6 +568,347 @@ exports.verifyPayment = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to verify payment',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get pending payment approvals for organizer's events
+// @route   GET /api/registrations/pending-payments
+// @access  Private (Organizer)
+exports.getPendingPayments = async (req, res) => {
+  try {
+    // Get all events by this organizer
+    const events = await Event.find({ organizer: req.user.id }).select('_id');
+    const eventIds = events.map(e => e._id);
+    
+    // Find registrations with pending payment proofs
+    const pendingRegistrations = await Registration.find({
+      event: { $in: eventIds },
+      paymentProofStatus: 'pending',
+      paymentProof: { $ne: null }
+    })
+      .populate('event', 'eventName eventType registrationFee merchandiseDetails')
+      .populate('participant', 'firstName lastName email rollNumber')
+      .sort('-paymentProofUploadedAt');
+    
+    res.json({
+      success: true,
+      count: pendingRegistrations.length,
+      registrations: pendingRegistrations
+    });
+  } catch (error) {
+    console.error('Get pending payments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pending payments',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get all payment submissions (pending/approved/rejected) for an event
+// @route   GET /api/events/:id/payment-submissions
+// @access  Private (Organizer - own events)
+exports.getEventPaymentSubmissions = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+    
+    // Check if user is the organizer
+    if (event.organizer.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only view payment submissions for your own events'
+      });
+    }
+    
+    const registrations = await Registration.find({
+      event: event._id,
+      paymentProof: { $ne: null }
+    })
+      .populate('participant', 'firstName lastName email rollNumber')
+      .populate('paymentApprovedBy', 'organizerName')
+      .sort('-paymentProofUploadedAt');
+    
+    res.json({
+      success: true,
+      count: registrations.length,
+      registrations
+    });
+  } catch (error) {
+    console.error('Get payment submissions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payment submissions',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Scan QR code and mark attendance
+// @route   POST /api/tickets/scan
+// @access  Private (Organizer)
+exports.scanTicket = async (req, res) => {
+  try {
+    const Ticket = require('../models/Ticket');
+    const { ticketId } = req.body || {};
+    
+    if (!ticketId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ticket ID is required'
+      });
+    }
+    
+    // Find ticket
+    const ticket = await Ticket.findOne({ ticketId })
+      .populate('event')
+      .populate('participant', 'firstName lastName email rollNumber')
+      .populate('registration');
+    
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid ticket ID'
+      });
+    }
+    
+    // Check if organizer owns this event
+    if (ticket.event.organizer.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only scan tickets for your own events'
+      });
+    }
+    
+    // Check if already used
+    if (ticket.status === 'used') {
+      return res.status(400).json({
+        success: false,
+        message: 'Ticket already scanned',
+        scannedAt: ticket.scannedAt,
+        scannedBy: ticket.scannedBy,
+        duplicate: true
+      });
+    }
+    
+    // Check if expired
+    if (ticket.status === 'expired' || new Date() > ticket.expiresAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ticket has expired'
+      });
+    }
+    
+    // Check if cancelled
+    if (ticket.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Ticket has been cancelled'
+      });
+    }
+    
+    // Mark ticket as used
+    await ticket.markAsUsed(req.user.id);
+    
+    // Mark attendance in registration
+    const registration = await Registration.findById(ticket.registration);
+    if (registration) {
+      registration.attended = true;
+      registration.attendanceMarkedAt = Date.now();
+      registration.attendanceMarkedBy = req.user.id;
+      await registration.save();
+    }
+    
+    res.json({
+      success: true,
+      message: 'Attendance marked successfully',
+      ticket,
+      participant: ticket.participant
+    });
+  } catch (error) {
+    console.error('Scan ticket error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to scan ticket',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Manual attendance override
+// @route   POST /api/events/:eventId/attendance/:registrationId
+// @access  Private (Organizer)
+exports.manualAttendanceOverride = async (req, res) => {
+  try {
+    const { eventId, registrationId } = req.params;
+    const { attended, reason } = req.body || {};
+    
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+    
+    // Check if organizer owns this event
+    if (event.organizer.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only manage attendance for your own events'
+      });
+    }
+    
+    const registration = await Registration.findById(registrationId)
+      .populate('participant', 'firstName lastName email');
+    
+    if (!registration || registration.event.toString() !== eventId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Registration not found for this event'
+      });
+    }
+    
+    registration.attended = attended;
+    registration.attendanceMarkedAt = Date.now();
+    registration.attendanceMarkedBy = req.user.id;
+    
+    // Add audit log to registration (optional field)
+    if (!registration.attendanceAuditLog) {
+      registration.attendanceAuditLog = [];
+    }
+    registration.attendanceAuditLog.push({
+      action: attended ? 'marked_present' : 'marked_absent',
+      by: req.user.id,
+      at: Date.now(),
+      reason: reason || 'Manual override',
+      method: 'manual'
+    });
+    
+    await registration.save();
+    
+    res.json({
+      success: true,
+      message: `Attendance ${attended ? 'marked' : 'removed'} for ${registration.participant.firstName} ${registration.participant.lastName}`,
+      registration
+    });
+  } catch (error) {
+    console.error('Manual attendance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update attendance',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get attendance dashboard for an event
+// @route   GET /api/events/:id/attendance
+// @access  Private (Organizer)
+exports.getEventAttendance = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+    
+    // Check if organizer owns this event
+    if (event.organizer.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only view attendance for your own events'
+      });
+    }
+    
+    const registrations = await Registration.find({
+      event: event._id,
+      status: 'confirmed'
+    })
+      .populate('participant', 'firstName lastName email rollNumber')
+      .populate('attendanceMarkedBy', 'organizerName')
+      .sort('participant.firstName');
+    
+    const stats = {
+      totalRegistered: registrations.length,
+      attended: registrations.filter(r => r.attended).length,
+      notAttended: registrations.filter(r => !r.attended).length,
+      attendanceRate: registrations.length > 0 
+        ? ((registrations.filter(r => r.attended).length / registrations.length) * 100).toFixed(2) 
+        : 0
+    };
+    
+    res.json({
+      success: true,
+      stats,
+      registrations
+    });
+  } catch (error) {
+    console.error('Get attendance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch attendance',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Export attendance report as CSV
+// @route   GET /api/events/:id/attendance/export
+// @access  Private (Organizer)
+exports.exportAttendance = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+    
+    // Check if organizer owns this event
+    if (event.organizer.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only export attendance for your own events'
+      });
+    }
+    
+    const registrations = await Registration.find({
+      event: event._id,
+      status: 'confirmed'
+    })
+      .populate('participant', 'firstName lastName email rollNumber')
+      .sort('participant.firstName');
+    
+    // Create CSV content
+    let csv = 'First Name,Last Name,Email,Roll Number,Attended,Attendance Marked At\n';
+    
+    registrations.forEach(reg => {
+      const participant = reg.participant;
+      csv += `${participant.firstName || ''},${participant.lastName || ''},${participant.email || ''},${participant.rollNumber || ''},${reg.attended ? 'Yes' : 'No'},${reg.attendanceMarkedAt ? new Date(reg.attendanceMarkedAt).toLocaleString() : ''}\n`;
+    });
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=attendance_${event.eventName.replace(/\s+/g, '_')}_${Date.now()}.csv`);
+    res.send(csv);
+  } catch (error) {
+    console.error('Export attendance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export attendance',
       error: error.message
     });
   }

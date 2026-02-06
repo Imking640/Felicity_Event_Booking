@@ -29,9 +29,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Login function
-  const login = async (email, password) => {
+  const login = async (email, password, recaptchaToken) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { email, password, recaptchaToken });
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Registration failed' 
+        message: error.response?.data?.message || error.response?.data?.errors?.[0]?.msg || 'Registration failed' 
       };
     }
   };

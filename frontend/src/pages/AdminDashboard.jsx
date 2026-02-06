@@ -127,16 +127,16 @@ const AdminDashboard = () => {
             </button>
           </div>
 
-          <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', cursor: 'pointer' }} onClick={() => navigate('/admin/manage-organizers')}>
+          <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', cursor: 'pointer' }} onClick={() => navigate('/admin/password-resets')}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔑</div>
             <h3 style={{ color: '#ffff00', fontSize: '1.5rem', marginBottom: '1rem', fontFamily: "'Bungee', cursive" }}>
-              Password Resets
+              Password Reset Requests
             </h3>
             <p style={{ color: '#fff', marginBottom: '1.5rem', fontFamily: "'Anton', sans-serif" }}>
-              Reset passwords for organizer accounts
+              View and process organizer password reset requests
             </p>
             <button className="disco-button" style={{ width: '100%' }}>
-              🔐 Reset
+              🔐 View Requests
             </button>
           </div>
 

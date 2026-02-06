@@ -7,6 +7,7 @@ const OrganizerProfile = () => {
   const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [requestingReset, setRequestingReset] = useState(false);
   const [form, setForm] = useState({
     organizerName: '',
     category: '',
@@ -54,6 +55,26 @@ const OrganizerProfile = () => {
       showDiscoToast(err.response?.data?.message || 'Failed to update profile', false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestPasswordReset = async () => {
+    if (!window.confirm('Request a password reset? Admin will be notified and will reset your password.')) return;
+    
+    setRequestingReset(true);
+    try {
+      const res = await api.post('/auth/request-password-reset', { 
+        email: user?.email,
+        reason: 'Requested from profile page'
+      });
+      if (res.data.success) {
+        showDiscoToast('Password reset request submitted! Admin will process it shortly.', true);
+      }
+    } catch (err) {
+      console.error('Request password reset error', err);
+      showDiscoToast(err.response?.data?.message || 'Failed to submit request', false);
+    } finally {
+      setRequestingReset(false);
     }
   };
 
@@ -128,6 +149,26 @@ const OrganizerProfile = () => {
               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.2)' }}>
                 <div style={{ color: '#ccc', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>🔐 Login Email (Non-Editable)</div>
                 <div style={{ fontSize: '1rem' }}>{user?.email}</div>
+              </div>
+
+              {/* Password Reset Request Section */}
+              <div style={{ background: 'rgba(255,0,0,0.1)', padding: '1.5rem', borderRadius: '12px', border: '2px solid rgba(255,0,0,0.3)' }}>
+                <div style={{ color: '#ff6b6b', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>🔑 Password Reset</div>
+                <div style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '1rem' }}>
+                  Forgot your password? Request a password reset and the admin will generate a new password for you.
+                </div>
+                <button 
+                  type="button"
+                  className="disco-button" 
+                  onClick={handleRequestPasswordReset}
+                  disabled={requestingReset}
+                  style={{ 
+                    background: 'linear-gradient(90deg, #ff4444, #ff6b6b)',
+                    padding: '0.75rem 1.5rem'
+                  }}
+                >
+                  {requestingReset ? '⏳ Requesting...' : '🔑 Request Password Reset'}
+                </button>
               </div>
             </div>
           ) : (

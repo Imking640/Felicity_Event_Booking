@@ -60,6 +60,19 @@ const registrationSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: null
   },
+  paymentProofUploadedAt: {
+    type: Date,
+    default: null
+  },
+  paymentApprovedAt: {
+    type: Date,
+    default: null
+  },
+  paymentApprovedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
   
   // Team Information (for future team events)
   teamName: {
@@ -87,6 +100,22 @@ const registrationSchema = new mongoose.Schema({
     ref: 'User',
     default: null
   },
+  
+  // Audit Log for attendance changes
+  attendanceAuditLog: [{
+    action: String, // 'marked_present', 'marked_absent', 'qr_scanned'
+    by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    at: Date,
+    reason: String,
+    method: {
+      type: String,
+      enum: ['manual', 'qr_scan'],
+      default: 'manual'
+    }
+  }],
   
   // Timestamps
   registrationDate: {

@@ -1,27 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DiscoDecorations, { showDiscoToast } from '../components/DiscoDecorations';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const recaptchaRef = useRef(null);
   
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // reCAPTCHA site key - Replace with your actual key or use env variable
+  const RECAPTCHA_SITE_KEY = process.env.REACT_APP_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'; // Test key
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await login(email, password);
+    // Get reCAPTCHA token
+    const recaptchaToken = recaptchaRef.current?.getValue();
+    
+    if (!recaptchaToken) {
+      showDiscoToast('⚠️ Please complete the CAPTCHA verification', false);
+      setLoading(false);
+      return;
+    }
+
+    const result = await login(email, password, recaptchaToken);
     
     if (result.success) {
       showDiscoToast('🎉 Welcome back! Let\'s boogie!', true);
       setTimeout(() => navigate('/dashboard'), 500);
     } else {
       showDiscoToast('⚠️ ' + result.message, false);
+      // Reset reCAPTCHA on failed attempt
+      recaptchaRef.current?.reset();
     }
     
     setLoading(false);
@@ -91,6 +107,15 @@ const Login = () => {
               className="disco-input"
               style={{ width: '100%', marginTop: '0.5rem' }}
               placeholder="••••••••"
+            />
+          </div>
+
+          {/* reCAPTCHA */}
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              sitekey={RECAPTCHA_SITE_KEY}
+              theme="dark"
             />
           </div>
 
