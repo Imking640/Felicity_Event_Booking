@@ -11,7 +11,10 @@ const {
 } = require('../controllers/eventController');
 const {
   registerForEvent,
-  getEventRegistrations
+  getEventRegistrations,
+  getEventPaymentSubmissions,
+  getEventAttendance,
+  exportAttendance
 } = require('../controllers/registrationController');
 
 // Public routes
@@ -28,5 +31,12 @@ router.post('/:id/publish', verifyToken, isOrganizer, publishEvent);
 // Registration routes
 router.post('/:id/register', verifyToken, isParticipant, registerForEvent);
 router.get('/:id/registrations', verifyToken, isOrganizer, getEventRegistrations);
+
+// Payment Management routes
+router.get('/:id/payment-submissions', verifyToken, isOrganizer, getEventPaymentSubmissions);
+
+// Attendance Management routes
+router.get('/:id/attendance', verifyToken, isOrganizer, getEventAttendance);
+router.get('/:id/attendance/export', verifyToken, isOrganizer, exportAttendance);
 
 module.exports = router;

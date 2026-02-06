@@ -2,12 +2,26 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { verifyToken } = require('../middleware/auth');
+const { 
+  loginLimiter, 
+  registerLimiter, 
+  validateRegistration, 
+  validateLogin, 
+  checkIPBlock 
+} = require('../middleware/security');
 
-// Public routes
-router.post('/register', authController.register);
-router.post('/login', authController.login);
+// Email verification routes (for Non-IIIT users)
+router.post('/send-verification', registerLimiter, authController.sendEmailVerification);
+router.post('/verify-email', authController.verifyEmail);
+
+// Public routes with security middleware
+router.post('/register', registerLimiter, validateRegistration, authController.register);
+router.post('/login', loginLimiter, checkIPBlock, validateLogin, authController.login);
 // Public: list organizers for onboarding
 router.get('/organizers', authController.listOrganizersPublic);
+
+// Public: request password reset (for organizers)
+router.post('/request-password-reset', authController.requestPasswordReset);
 
 // Protected routes (require authentication)
 router.get('/me', verifyToken, authController.getMe);

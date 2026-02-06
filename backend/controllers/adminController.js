@@ -252,3 +252,139 @@ exports.getDashboardStats = async (req, res) => {
     });
   }
 };
+
+// @desc    Get all password reset requests
+// @route   GET /api/admin/password-reset-requests
+// @access  Private (Admin only)
+exports.getPasswordResetRequests = async (req, res) => {
+  try {
+    const PasswordResetRequest = require('../models/PasswordResetRequest');
+    
+    const { status } = req.query;
+    
+    const filter = {};
+    if (status && ['pending', 'completed', 'closed'].includes(status)) {
+      filter.status = status;
+    }
+    
+    const requests = await PasswordResetRequest.find(filter)
+      .populate('organizer', 'email organizerName category')
+      .populate('completedBy', 'adminName email')
+      .sort('-createdAt');
+    
+    res.json({
+      success: true,
+      count: requests.length,
+      requests
+    });
+    
+  } catch (error) {
+    console.error('Get password reset requests error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch password reset requests',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Reset password and complete request
+// @route   POST /api/admin/password-reset-requests/:id/reset
+// @access  Private (Admin only)
+exports.completePasswordResetRequest = async (req, res) => {
+  try {
+    const PasswordResetRequest = require('../models/PasswordResetRequest');
+    
+    const request = await PasswordResetRequest.findById(req.params.id);
+    
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Password reset request not found'
+      });
+    }
+    
+    if (request.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'This request has already been processed'
+      });
+    }
+    
+    // Find the organizer and reset their password
+    const organizer = await Organizer.findById(request.organizer);
+    
+    if (!organizer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Organizer not found'
+      });
+    }
+    
+    // Generate new random password
+    const newPassword = crypto.randomBytes(8).toString('hex');
+    
+    organizer.password = newPassword;
+    await organizer.save();
+    
+    // Mark request as completed
+    request.status = 'completed';
+    request.completedAt = new Date();
+    request.completedBy = req.user._id;
+    await request.save();
+    
+    res.json({
+      success: true,
+      message: 'Password reset successfully',
+      credentials: {
+        email: organizer.email,
+        password: newPassword
+      }
+    });
+    
+  } catch (error) {
+    console.error('Complete password reset request error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to complete password reset request',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Close password reset request (without resetting)
+// @route   POST /api/admin/password-reset-requests/:id/close
+// @access  Private (Admin only)
+exports.closePasswordResetRequest = async (req, res) => {
+  try {
+    const PasswordResetRequest = require('../models/PasswordResetRequest');
+    
+    const request = await PasswordResetRequest.findById(req.params.id);
+    
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Password reset request not found'
+      });
+    }
+    
+    // Mark request as closed
+    request.status = 'closed';
+    request.completedAt = new Date();
+    request.completedBy = req.user._id;
+    await request.save();
+    
+    res.json({
+      success: true,
+      message: 'Password reset request closed'
+    });
+    
+  } catch (error) {
+    console.error('Close password reset request error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to close password reset request',
+      error: error.message
+    });
+  }
+};

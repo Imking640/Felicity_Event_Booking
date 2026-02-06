@@ -165,6 +165,11 @@ const EventDetailOrganizer = () => {
                   ✅ Publish
                 </button>
               )}
+              {(event.status === 'published' || event.status === 'ongoing' || event.status === 'completed') && (
+                <button className="disco-button" onClick={() => navigate(`/events/${id}/attendance`)}>
+                  📱 QR Scanner
+                </button>
+              )}
               <button className="disco-button" onClick={() => navigate(`/organizer/events`)}>
                 📋 Back
               </button>
@@ -309,11 +314,18 @@ const EventDetailOrganizer = () => {
         {/* Participants Tab */}
         {activeTab === 'participants' && (
           <div className="disco-card" style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <h2 style={{ fontFamily: "'Bungee', cursive", color: '#ffff00' }}>👥 Participants ({filteredRegistrations.length})</h2>
-              <button className="disco-button" onClick={exportCSV}>
-                📥 Export CSV
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {(event.status === 'published' || event.status === 'ongoing' || event.status === 'completed') && (
+                  <button className="disco-button" onClick={() => navigate(`/events/${id}/attendance`)}>
+                    📱 QR Scanner
+                  </button>
+                )}
+                <button className="disco-button" onClick={exportCSV}>
+                  📥 Export CSV
+                </button>
+              </div>
             </div>
 
             <input

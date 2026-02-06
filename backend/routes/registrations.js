@@ -8,7 +8,10 @@ const {
   getParticipationSummary,
   cancelRegistration,
   uploadPaymentProof,
-  verifyPayment
+  verifyPayment,
+  getPendingPayments,
+  scanTicket,
+  manualAttendanceOverride
 } = require('../controllers/registrationController');
 
 // Participant routes
@@ -19,7 +22,12 @@ router.get('/:id/ticket', verifyToken, isParticipant, getRegistrationTicket);
 router.delete('/:id', verifyToken, isParticipant, cancelRegistration);
 router.post('/:id/payment', verifyToken, isParticipant, uploadPaymentProof);
 
-// Organizer routes
+// Organizer routes - Payment Management
+router.get('/pending-payments', verifyToken, isOrganizer, getPendingPayments);
 router.post('/:id/verify-payment', verifyToken, isOrganizer, verifyPayment);
+
+// Organizer routes - Attendance Management
+router.post('/tickets/scan', verifyToken, isOrganizer, scanTicket);
+router.post('/events/:eventId/attendance/:registrationId', verifyToken, isOrganizer, manualAttendanceOverride);
 
 module.exports = router;

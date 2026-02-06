@@ -43,7 +43,7 @@ const Navbar = () => {
         background: 'transparent',
         backdropFilter: 'blur(10px)',
         color: 'white',
-        padding: '1.5rem 2rem',
+        padding: '1rem 2rem',
         position: 'sticky',
         top: 0,
         zIndex: 1000,
@@ -53,34 +53,60 @@ const Navbar = () => {
       <div style={{
         maxWidth: '1600px',
         margin: '0 auto',
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
         gap: '1rem'
       }}>
         <div style={{ 
           display: 'flex', 
-          gap: '0.8rem', 
+          gap: '0.6rem', 
           alignItems: 'center',
-          flexWrap: 'wrap',
-          justifyContent: 'flex-start'
+          flexWrap: 'nowrap'
         }}>
-          <div style={{ transition: 'transform 0.3s ease' }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <Link to="/events" style={navLinkStyle('/events')}>
-              🎉 Events
-            </Link>
-          </div>
-          <div style={{ transition: 'transform 0.3s ease' }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <Link to="/organizers" style={navLinkStyle('/organizers')}>
-              🏛️ Clubs
-            </Link>
-          </div>
+          {/* Show Events and Clubs for participants only (not admin or organizers) */}
+          {user?.role === 'participant' && (
+            <>
+              <div style={{ transition: 'transform 0.3s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <Link to="/events" style={navLinkStyle('/events')}>
+                  🎉 Events
+                </Link>
+              </div>
+              <div style={{ transition: 'transform 0.3s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <Link to="/organizers" style={navLinkStyle('/organizers')}>
+                  🏛️ Clubs
+                </Link>
+              </div>
+            </>
+          )}
+          
+          {/* Show Events and Clubs for non-logged in users */}
+          {!isAuthenticated && (
+            <>
+              <div style={{ transition: 'transform 0.3s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <Link to="/events" style={navLinkStyle('/events')}>
+                  🎉 Events
+                </Link>
+              </div>
+              <div style={{ transition: 'transform 0.3s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <Link to="/organizers" style={navLinkStyle('/organizers')}>
+                  🏛️ Clubs
+                </Link>
+              </div>
+            </>
+          )}
           
           {isAuthenticated ? (
             <>
@@ -100,7 +126,7 @@ const Navbar = () => {
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                   >
                     <Link to="/create-event" style={navLinkStyle('/create-event')}>
-                      ➕ Create
+                      ➕ Create Event
                     </Link>
                   </div>
                   <div style={{ transition: 'transform 0.3s ease' }}
@@ -109,6 +135,14 @@ const Navbar = () => {
                   >
                     <Link to="/organizer/profile" style={navLinkStyle('/organizer/profile')}>
                       👤 Profile
+                    </Link>
+                  </div>
+                  <div style={{ transition: 'transform 0.3s ease' }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    <Link to="/organizer/ongoing-events" style={navLinkStyle('/organizer/ongoing-events')}>
+                      🎪 Ongoing Events
                     </Link>
                   </div>
                 </>
@@ -121,7 +155,15 @@ const Navbar = () => {
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                   >
                     <Link to="/admin/manage-organizers" style={navLinkStyle('/admin/manage-organizers')}>
-                      👥 Organizers
+                      👥 Manage Organizers
+                    </Link>
+                  </div>
+                  <div style={{ transition: 'transform 0.3s ease' }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    <Link to="/admin/password-resets" style={navLinkStyle('/admin/password-resets')}>
+                      🔑 Password Resets
                     </Link>
                   </div>
                 </>
@@ -132,8 +174,8 @@ const Navbar = () => {
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                 >
-                  <Link to="/tickets" style={navLinkStyle('/tickets')}>
-                    🎫 Tickets
+                  <Link to="/profile" style={navLinkStyle('/profile')}>
+                    👤 Profile
                   </Link>
                 </div>
               )}
@@ -142,38 +184,10 @@ const Navbar = () => {
         </div>
 
         <div style={{ 
-          display: 'flex',
-          justifyContent: 'center',
-          transition: 'transform 0.3s ease'
-        }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          <Link to="/" style={{ 
-            color: '#ffff00', 
-            textDecoration: 'none', 
-            fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', 
-            fontWeight: '900',
-            fontFamily: "'Bungee', cursive",
-            textShadow: '0 0 30px rgba(255, 255, 0, 1), 0 0 60px rgba(255, 0, 255, 0.8), 0 0 90px rgba(0, 255, 255, 0.6)',
-            letterSpacing: '4px',
-            background: 'linear-gradient(90deg, #ffff00 0%, #ff00ff 50%, #00ffff 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            filter: 'drop-shadow(0 0 20px rgba(255, 255, 0, 0.8))',
-            whiteSpace: 'nowrap'
-          }}>
-            ⚡ FELICITY ⚡
-          </Link>
-        </div>
-
-        <div style={{ 
           display: 'flex', 
-          gap: '0.8rem', 
+          gap: '0.6rem', 
           alignItems: 'center',
-          flexWrap: 'wrap',
-          justifyContent: 'flex-end'
+          flexWrap: 'nowrap'
         }}>
           {isAuthenticated ? (
             <>

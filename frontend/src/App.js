@@ -9,16 +9,21 @@ import Register from './pages/Register';
 import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
 import Events from './pages/Events';
+import EventRegistration from './pages/EventRegistration';
 import DashboardRouter from './pages/DashboardRouter';
 import CreateEvent from './pages/CreateEvent';
 import OrganizerEvents from './pages/OrganizerEvents';
 import EventParticipants from './pages/EventParticipants';
 import EventDetailOrganizer from './pages/EventDetailOrganizer';
 import OrganizerProfile from './pages/OrganizerProfile';
+import OngoingEvents from './pages/OngoingEvents';
 import ManageOrganizers from './pages/ManageOrganizers';
+import PasswordResetRequests from './pages/PasswordResetRequests';
 import Tickets from './pages/Tickets';
 import OrganizersList from './pages/OrganizersList';
 import OrganizerView from './pages/OrganizerView';
+import PaymentApprovals from './pages/PaymentApprovals';
+import AttendanceScanner from './pages/AttendanceScanner';
 
 function App() {
   return (
@@ -67,6 +72,15 @@ function App() {
             <Route path="/organizers/:id" element={<OrganizerView />} />
 
             <Route
+              path="/events/:id/register"
+              element={
+                <ProtectedRoute allowedRoles={["participant"]}>
+                  <EventRegistration />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/create-event"
               element={
                 <ProtectedRoute allowedRoles={["organizer"]}>
@@ -112,6 +126,33 @@ function App() {
             />
 
             <Route
+              path="/organizer/ongoing-events"
+              element={
+                <ProtectedRoute allowedRoles={["organizer"]}>
+                  <OngoingEvents />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/organizer/payment-approvals"
+              element={
+                <ProtectedRoute allowedRoles={["organizer"]}>
+                  <PaymentApprovals />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/events/:eventId/attendance"
+              element={
+                <ProtectedRoute allowedRoles={["organizer"]}>
+                  <AttendanceScanner />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/admin/manage-organizers"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
@@ -124,7 +165,7 @@ function App() {
               path="/admin/password-resets"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
-                  <ManageOrganizers />
+                  <PasswordResetRequests />
                 </ProtectedRoute>
               }
             />

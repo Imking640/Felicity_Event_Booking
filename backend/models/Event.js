@@ -16,7 +16,7 @@ const eventSchema = new mongoose.Schema({
   },
   eventType: {
     type: String,
-    enum: ['Normal', 'Technical', 'Cultural', 'Sports', 'Workshop', 'Merchandise'],
+    enum: ['Normal', 'Merchandise'],
     default: 'Normal',
     required: [true, 'Event type is required']
   },
