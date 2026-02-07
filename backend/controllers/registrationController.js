@@ -145,8 +145,23 @@ exports.registerForEvent = async (req, res) => {
       }
     }
 
+    // Normal events with payment: requires payment proof approval before ticket
+    if (event.eventType === 'Normal' && event.registrationFee > 0) {
+      // Registration stays pending until payment approved
+      registration.status = 'pending';
+      registration.paymentStatus = 'pending';
+      await registration.save();
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Registration placed! Please upload payment proof for approval.',
+        registration,
+        requiresPaymentProof: true
+      });
+    }
+
     // Normal free events: auto-confirm
-    if (event.registrationFee === 0 || event.eventType === 'Normal') {
+    if (event.registrationFee === 0) {
       registration.paymentStatus = 'paid';
       registration.status = 'confirmed';
       await registration.save();
@@ -175,11 +190,16 @@ exports.registerForEvent = async (req, res) => {
       }
     }
 
-    // Paid normal events: pending until payment
+    // Fallback for any other paid events: pending until payment
+    registration.status = 'pending';
+    registration.paymentStatus = 'pending';
+    await registration.save();
+    
     return res.status(201).json({
       success: true,
-      message: 'Registration created. Please complete payment to confirm.',
-      registration
+      message: 'Registration created. Please upload payment proof for approval.',
+      registration,
+      requiresPaymentProof: true
     });
   } catch (error) {
     console.error('Register for event error:', error);
@@ -623,19 +643,22 @@ exports.getPendingPayments = async (req, res) => {
   }
 };
 
-// @desc    Get all merchandise orders for organizer's events
+// @desc    Get all payment orders for organizer's events (Merchandise + paid Normal events)
 // @route   GET /api/registrations/merchandise-orders
 // @access  Private (Organizer)
 exports.getMerchandiseOrders = async (req, res) => {
   try {
-    // Get all merchandise events by this organizer
+    // Get all events by this organizer that require payment (Merchandise OR Normal with fee)
     const events = await Event.find({ 
       organizer: req.user.id,
-      eventType: 'Merchandise'
+      $or: [
+        { eventType: 'Merchandise' },
+        { eventType: 'Normal', registrationFee: { $gt: 0 } }
+      ]
     }).select('_id');
     const eventIds = events.map(e => e._id);
     
-    // Find all registrations for merchandise events
+    // Find all registrations for these events
     const registrations = await Registration.find({
       event: { $in: eventIds }
     })

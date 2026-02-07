@@ -17,10 +17,10 @@ const EventRegistration = () => {
   // Custom form data only
   const [customFormData, setCustomFormData] = useState({});
   
-  // Merchandise details
+  // Merchandise details - now with quantity per variant
   const [merchandiseDetails, setMerchandiseDetails] = useState({
-    selectedVariants: {},
-    quantity: 1
+    selectedVariants: {}, // { variantName: { option: 'S', quantity: 1 } }
+    totalQuantity: 0
   });
   const [isRegistered, setIsRegistered] = useState(false);
   const [myRegistration, setMyRegistration] = useState(null);
@@ -82,16 +82,16 @@ const EventRegistration = () => {
           setCustomFormData(initialData);
         }
         
-        // Initialize merchandise variants
+        // Initialize merchandise variants with quantity per variant
         if (res.data.event.eventType === 'Merchandise' && res.data.event.merchandiseDetails?.variants) {
           const initialVariants = {};
           res.data.event.merchandiseDetails.variants.forEach(v => {
-            initialVariants[v.name] = v.options[0] || '';
+            initialVariants[v.name] = { option: v.options[0] || '', quantity: 0 };
           });
-          setMerchandiseDetails(prev => ({
-            ...prev,
-            selectedVariants: initialVariants
-          }));
+          setMerchandiseDetails({
+            selectedVariants: initialVariants,
+            totalQuantity: 0
+          });
         }
       }
     } catch (err) {
@@ -117,11 +117,30 @@ const EventRegistration = () => {
     }
   };
 
-  const handleMerchandiseChange = (variantName, value) => {
+  const handleMerchandiseOptionChange = (variantName, option) => {
     setMerchandiseDetails(prev => ({
       ...prev,
-      selectedVariants: { ...prev.selectedVariants, [variantName]: value }
+      selectedVariants: { 
+        ...prev.selectedVariants, 
+        [variantName]: { ...prev.selectedVariants[variantName], option } 
+      }
     }));
+  };
+
+  const handleMerchandiseQuantityChange = (variantName, quantity, maxLimit) => {
+    const qty = Math.max(0, Math.min(parseInt(quantity) || 0, maxLimit));
+    setMerchandiseDetails(prev => {
+      const newVariants = { 
+        ...prev.selectedVariants, 
+        [variantName]: { ...prev.selectedVariants[variantName], quantity: qty } 
+      };
+      // Calculate total quantity
+      const totalQty = Object.values(newVariants).reduce((sum, v) => sum + (v.quantity || 0), 0);
+      return {
+        selectedVariants: newVariants,
+        totalQuantity: totalQty
+      };
+    });
   };
 
   // Upload payment proof for merchandise
@@ -172,6 +191,15 @@ const EventRegistration = () => {
         }
       }
 
+      // Validate merchandise - must have at least 1 item
+      if (event.eventType === 'Merchandise') {
+        if (merchandiseDetails.totalQuantity < 1) {
+          showDiscoToast('Please select at least 1 item quantity', false);
+          setSubmitting(false);
+          return;
+        }
+      }
+
       // Only send custom form data (no pre-filled participant info)
       const payload = {
         customFormData: customFormData
@@ -179,15 +207,19 @@ const EventRegistration = () => {
 
       // Add merchandise details if applicable
       if (event.eventType === 'Merchandise') {
-        payload.merchandiseDetails = merchandiseDetails;
+        // Transform to simpler format for backend
+        payload.merchandiseDetails = {
+          selectedVariants: merchandiseDetails.selectedVariants,
+          quantity: merchandiseDetails.totalQuantity
+        };
       }
 
       const res = await api.post(`/events/${id}/register`, payload);
 
       if (res.data.success) {
-        // For merchandise with payment required, show different message
-        if (event.eventType === 'Merchandise' && event.registrationFee > 0) {
-          showDiscoToast('🛒 Order placed! Please upload payment proof.', true);
+        // For events with payment required, show different message
+        if (res.data.requiresPaymentProof) {
+          showDiscoToast('🛒 Registration placed! Please upload payment proof.', true);
           setIsRegistered(true);
           setMyRegistration(res.data.registration);
         } else {
@@ -428,41 +460,69 @@ const EventRegistration = () => {
                   alignItems: 'center',
                   gap: '0.5rem'
                 }}>
-                  �️ Merchandise Options
+                  🛍️ Merchandise Options
                 </h3>
                 
+                <p style={{ color: '#ccc', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                  Select option and quantity for each variant you want to purchase.
+                </p>
+                
                 {event.merchandiseDetails.variants?.map((variant, i) => (
-                  <div key={i} style={{ marginBottom: '1rem' }}>
-                    <label className="disco-label">{variant.name} *</label>
-                    <select
-                      value={merchandiseDetails.selectedVariants[variant.name] || ''}
-                      onChange={(e) => handleMerchandiseChange(variant.name, e.target.value)}
-                      className="disco-input"
-                      required
-                    >
-                      {variant.options?.map((opt, j) => (
-                        <option key={j} value={opt}>{opt}</option>
-                      ))}
-                    </select>
+                  <div key={i} style={{ 
+                    marginBottom: '1.5rem', 
+                    padding: '1rem',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}>
+                    <label className="disco-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
+                      {variant.name}
+                    </label>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select
+                        value={merchandiseDetails.selectedVariants[variant.name]?.option || ''}
+                        onChange={(e) => handleMerchandiseOptionChange(variant.name, e.target.value)}
+                        className="disco-input"
+                        style={{ minWidth: '120px', flex: 1 }}
+                      >
+                        {variant.options?.map((opt, j) => (
+                          <option key={j} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ color: '#ccc', fontSize: '0.85rem' }}>Qty:</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max={event.merchandiseDetails.purchaseLimit || 5}
+                          value={merchandiseDetails.selectedVariants[variant.name]?.quantity || 0}
+                          onChange={(e) => handleMerchandiseQuantityChange(
+                            variant.name, 
+                            e.target.value, 
+                            event.merchandiseDetails.purchaseLimit || 5
+                          )}
+                          className="disco-input"
+                          style={{ width: '70px', textAlign: 'center' }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 ))}
                 
-                <div>
-                  <label className="disco-label">Quantity</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max={event.merchandiseDetails.purchaseLimit || 5}
-                    value={merchandiseDetails.quantity}
-                    onChange={(e) => setMerchandiseDetails(prev => ({ 
-                      ...prev, 
-                      quantity: parseInt(e.target.value) || 1 
-                    }))}
-                    className="disco-input"
-                    style={{ maxWidth: '120px' }}
-                  />
-                  <span style={{ color: '#ccc', fontSize: '0.85rem', marginLeft: '0.5rem' }}>
-                    (Max: {event.merchandiseDetails.purchaseLimit || 5})
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '0.8rem',
+                  background: 'rgba(255,255,0,0.1)',
+                  borderRadius: '8px',
+                  marginTop: '1rem'
+                }}>
+                  <span style={{ color: '#ffff00', fontWeight: 'bold' }}>
+                    Total Items: {merchandiseDetails.totalQuantity}
+                  </span>
+                  <span style={{ color: '#ccc', fontSize: '0.85rem' }}>
+                    (Max per variant: {event.merchandiseDetails.purchaseLimit || 5})
                   </span>
                 </div>
               </div>
@@ -522,7 +582,7 @@ const EventRegistration = () => {
                   textShadow: '0 0 10px rgba(255,255,0,0.5)'
                 }}>
                   ₹{event.eventType === 'Merchandise' 
-                    ? (event.registrationFee || 0) * merchandiseDetails.quantity 
+                    ? (event.registrationFee || 0) * merchandiseDetails.totalQuantity 
                     : event.registrationFee || 0}
                 </span>
               </div>
@@ -530,6 +590,12 @@ const EventRegistration = () => {
               {event.eventType === 'Merchandise' && event.registrationFee > 0 && (
                 <p style={{ color: '#00ffff', fontSize: '0.9rem', marginBottom: '1rem', textAlign: 'center' }}>
                   ⚠️ After placing order, you'll need to upload payment proof for approval
+                </p>
+              )}
+              
+              {event.eventType === 'Normal' && event.registrationFee > 0 && (
+                <p style={{ color: '#00ffff', fontSize: '0.9rem', marginBottom: '1rem', textAlign: 'center' }}>
+                  ⚠️ After registration, you'll need to upload payment proof for approval
                 </p>
               )}
               
@@ -551,9 +617,9 @@ const EventRegistration = () => {
           </form>
         )}
         
-        {/* Payment Proof Upload for Merchandise (after registration, waiting for approval) */}
-        {isRegistered && myRegistration && event.eventType === 'Merchandise' && 
-         myRegistration.paymentProofStatus !== 'approved' && (
+        {/* Payment Proof Upload for paid events (after registration, waiting for approval) */}
+        {isRegistered && myRegistration && event.registrationFee > 0 && 
+         myRegistration.paymentProofStatus !== 'approved' && myRegistration.status !== 'confirmed' && (
           <div className="disco-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
             <h3 style={{ 
               fontFamily: "'Bungee', cursive", 
@@ -615,7 +681,9 @@ const EventRegistration = () => {
             ) : (
               <div>
                 <p style={{ color: '#ccc', marginBottom: '1rem' }}>
-                  Please upload your payment screenshot. Amount: ₹{(event.registrationFee || 0) * (myRegistration.merchandiseDetails?.quantity || 1)}
+                  Please upload your payment screenshot. Amount: ₹{event.eventType === 'Merchandise' 
+                    ? (event.registrationFee || 0) * (myRegistration.merchandiseDetails?.quantity || 1)
+                    : (event.registrationFee || 0)}
                 </p>
                 <div>
                   <label className="disco-label">Upload Payment Screenshot</label>
@@ -641,13 +709,30 @@ const EventRegistration = () => {
           </div>
         )}
         
-        {/* Show ticket link for approved merchandise */}
-        {isRegistered && myRegistration && event.eventType === 'Merchandise' && 
-         myRegistration.paymentProofStatus === 'approved' && (
+        {/* Show ticket link for approved payments */}
+        {isRegistered && myRegistration && event.registrationFee > 0 && 
+         (myRegistration.paymentProofStatus === 'approved' || myRegistration.status === 'confirmed') && (
           <div className="disco-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
             <span style={{ fontSize: '3rem' }}>✅</span>
             <h3 style={{ color: '#00ff88', marginTop: '0.5rem' }}>Payment Approved!</h3>
-            <p style={{ color: '#ccc', marginBottom: '1rem' }}>Your order has been confirmed.</p>
+            <p style={{ color: '#ccc', marginBottom: '1rem' }}>
+              {event.eventType === 'Merchandise' ? 'Your order has been confirmed.' : 'Your registration has been confirmed.'}
+            </p>
+            <button
+              onClick={() => navigate('/tickets')}
+              className="disco-button"
+            >
+              🎟️ View Your Ticket
+            </button>
+          </div>
+        )}
+        
+        {/* Show simple confirmation for free events */}
+        {isRegistered && myRegistration && event.registrationFee === 0 && myRegistration.status === 'confirmed' && (
+          <div className="disco-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+            <span style={{ fontSize: '3rem' }}>✅</span>
+            <h3 style={{ color: '#00ff88', marginTop: '0.5rem' }}>Registration Confirmed!</h3>
+            <p style={{ color: '#ccc', marginBottom: '1rem' }}>You're all set for this event.</p>
             <button
               onClick={() => navigate('/tickets')}
               className="disco-button"

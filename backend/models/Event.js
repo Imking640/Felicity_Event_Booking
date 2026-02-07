@@ -132,11 +132,12 @@ const eventSchema = new mongoose.Schema({
     }],
     stockQuantity: {
       type: Number,
-      min: 0
+      min: 0,
+      default: 0
     },
     purchaseLimit: {
       type: Number,
-      default: 1,
+      default: 5,
       min: 1
     }
   },

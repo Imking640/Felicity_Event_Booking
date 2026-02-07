@@ -244,7 +244,168 @@ const sendRegistrationConfirmation = async (participant, event) => {
   }
 };
 
+/**
+ * Send OTP for email verification
+ * @param {string} email - Recipient email
+ * @param {string} otp - OTP code
+ * @param {string} name - Recipient name
+ * @returns {Promise<Object>} Email send result
+ */
+const sendOTPEmail = async (email, otp, name = 'User') => {
+  try {
+    const transporter = createTransporter();
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%); 
+                   color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; text-align: center; }
+          .otp-box { background: white; padding: 30px; margin: 20px 0; 
+                    border: 2px solid #8338ec; border-radius: 15px; }
+          .otp-code { font-size: 42px; font-weight: bold; letter-spacing: 10px; 
+                     color: #8338ec; font-family: 'Courier New', monospace; }
+          .warning { color: #ff006e; font-size: 14px; margin-top: 20px; }
+          .footer { text-align: center; color: #666; font-size: 12px; margin-top: 30px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Email Verification</h1>
+            <p>Felicity Event Booking</p>
+          </div>
+          
+          <div class="content">
+            <p>Hello ${name},</p>
+            <p>Please use the following OTP to verify your email address:</p>
+            
+            <div class="otp-box">
+              <div class="otp-code">${otp}</div>
+            </div>
+            
+            <p>This OTP is valid for <strong>10 minutes</strong>.</p>
+            
+            <p class="warning">
+              ⚠️ Do not share this OTP with anyone. Our team will never ask for your OTP.
+            </p>
+          </div>
+          
+          <div class="footer">
+            <p>If you didn't request this OTP, please ignore this email.</p>
+            <p>&copy; 2026 Felicity Event Management. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    const mailOptions = {
+      from: `"Felicity Events" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: `🔐 Your Verification OTP - ${otp}`,
+      html: htmlContent
+    };
+    
+    const info = await transporter.sendMail(mailOptions);
+    console.log('OTP email sent to:', email, 'MessageId:', info.messageId);
+    
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('OTP email sending error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Send payment pending notification
+ * @param {string} email - Recipient email
+ * @param {string} name - Recipient name
+ * @param {Object} event - Event object
+ * @param {number} amount - Amount to pay
+ * @returns {Promise<Object>} Email send result
+ */
+const sendPaymentPendingEmail = async (email, name, event, amount) => {
+  try {
+    const transporter = createTransporter();
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #f9a825 0%, #ff6f00 100%); 
+                   color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .amount-box { background: white; padding: 20px; margin: 20px 0; 
+                       border: 2px solid #ff6f00; border-radius: 10px; text-align: center; }
+          .amount { font-size: 36px; font-weight: bold; color: #ff6f00; }
+          .button { background: #ff6f00; color: white; padding: 12px 30px; 
+                   text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>💳 Payment Required</h1>
+            <p>${event.eventName}</p>
+          </div>
+          
+          <div class="content">
+            <p>Dear ${name},</p>
+            <p>Your registration for <strong>${event.eventName}</strong> is pending payment verification.</p>
+            
+            <div class="amount-box">
+              <p>Amount to Pay:</p>
+              <div class="amount">₹${amount}</div>
+            </div>
+            
+            <h3>Next Steps:</h3>
+            <ol>
+              <li>Complete the payment</li>
+              <li>Take a screenshot of the payment confirmation</li>
+              <li>Upload the payment proof on the event page</li>
+              <li>Wait for organizer approval</li>
+            </ol>
+            
+            <p>Once your payment is verified, you'll receive your ticket via email.</p>
+            
+            <div style="text-align: center;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/events/${event._id}/register" class="button">
+                Upload Payment Proof
+              </a>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    const mailOptions = {
+      from: `"Felicity Events" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: `💳 Payment Required - ${event.eventName}`,
+      html: htmlContent
+    };
+    
+    await transporter.sendMail(mailOptions);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Payment pending email error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   sendTicketEmail,
-  sendRegistrationConfirmation
+  sendRegistrationConfirmation,
+  sendOTPEmail,
+  sendPaymentPendingEmail
 };

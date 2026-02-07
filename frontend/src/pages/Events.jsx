@@ -12,6 +12,10 @@ const Events = () => {
   const [search, setSearch] = useState('');
   const [scopeFollowed, setScopeFollowed] = useState(false);
   const [registeredEventIds, setRegisteredEventIds] = useState([]);
+  const [eligibility, setEligibility] = useState('All');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -20,7 +24,7 @@ const Events = () => {
     fetchEvents();
     fetchTrending();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, search, scopeFollowed]);
+  }, [selectedCategory, search, scopeFollowed, eligibility, startDate, endDate]);
 
   // Fetch user's registrations to know which events they're registered for
   useEffect(() => {
@@ -49,6 +53,9 @@ const Events = () => {
       if (selectedCategory !== 'All') params.append('type', selectedCategory);
       if (search.trim()) params.append('search', search.trim());
       if (scopeFollowed) params.append('scope', 'followed');
+      if (eligibility !== 'All') params.append('eligibility', eligibility);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
       const response = await api.get(`/events?${params.toString()}`);
       setEvents(response.data.events || []);
       setLoading(false);
@@ -56,6 +63,15 @@ const Events = () => {
       showDiscoToast('⚠️ Failed to load events', false);
       setLoading(false);
     }
+  };
+
+  const clearFilters = () => {
+    setSelectedCategory('All');
+    setEligibility('All');
+    setStartDate('');
+    setEndDate('');
+    setScopeFollowed(false);
+    setSearch('');
   };
 
   const fetchTrending = async () => {
@@ -155,73 +171,228 @@ const Events = () => {
 
       {/* Search and Filters */}
       <div style={{ 
-        display: 'flex', 
-        gap: '1rem', 
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        marginBottom: '3rem',
+        maxWidth: '1200px',
+        margin: '0 auto 2rem',
         position: 'relative',
         zIndex: 10
       }}>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search events or organizers..."
-          className="disco-input"
-          style={{ minWidth: 280 }}
-        />
-        {categories.map(category => (
+        {/* Search Bar */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '1rem', 
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          marginBottom: '1rem'
+        }}>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="🔍 Search events or organizers (fuzzy matching)..."
+            className="disco-input"
+            style={{ minWidth: 320, flex: '1 1 auto', maxWidth: 500 }}
+          />
           <button
-            key={category}
-            onClick={() => setSelectedCategory(category)}
-            className={selectedCategory === category ? "disco-button" : ""}
-            style={{
+            onClick={() => setShowFilters(!showFilters)}
+            className="disco-button"
+            style={{ 
               padding: '0.8rem 1.5rem',
-              background: selectedCategory === category 
-                ? undefined
-                : 'rgba(255, 255, 255, 0.1)',
-              border: selectedCategory === category
-                ? undefined
-                : '2px solid rgba(0, 255, 255, 0.4)',
-              borderRadius: '15px',
-              color: '#fff',
-              fontSize: '1rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              fontFamily: "'Bungee', cursive",
-              backdropFilter: 'blur(10px)'
-            }}
-            onMouseEnter={(e) => {
-              if (selectedCategory !== category) {
-                e.currentTarget.style.border = '2px solid rgba(0, 255, 255, 0.8)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (selectedCategory !== category) {
-                e.currentTarget.style.border = '2px solid rgba(0, 255, 255, 0.4)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }
+              background: showFilters ? 'linear-gradient(135deg, #00ffff, #0088ff)' : undefined
             }}
           >
-            {category}
+            🎛️ Filters {(selectedCategory !== 'All' || eligibility !== 'All' || startDate || endDate || scopeFollowed) && '•'}
           </button>
-        ))}
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}>
-          <input type="checkbox" checked={scopeFollowed} onChange={e => setScopeFollowed(e.target.checked)} />
-          Followed Clubs Only
-        </label>
+        </div>
+
+        {/* Event Type Buttons */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '0.8rem', 
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          marginBottom: '1rem'
+        }}>
+          {categories.map(category => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={selectedCategory === category ? "disco-button" : ""}
+              style={{
+                padding: '0.6rem 1.2rem',
+                background: selectedCategory === category 
+                  ? undefined
+                  : 'rgba(255, 255, 255, 0.1)',
+                border: selectedCategory === category
+                  ? undefined
+                  : '2px solid rgba(0, 255, 255, 0.4)',
+                borderRadius: '15px',
+                color: '#fff',
+                fontSize: '0.9rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontFamily: "'Bungee', cursive",
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        {/* Expandable Filters */}
+        {showFilters && (
+          <div className="disco-card" style={{ 
+            padding: '1.5rem',
+            marginBottom: '1rem'
+          }}>
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '1rem',
+              alignItems: 'end'
+            }}>
+              {/* Eligibility Filter */}
+              <div>
+                <label style={{ 
+                  color: '#ffff00', 
+                  fontFamily: "'Anton', sans-serif",
+                  fontSize: '0.85rem',
+                  marginBottom: '0.5rem',
+                  display: 'block'
+                }}>
+                  🎓 ELIGIBILITY
+                </label>
+                <select
+                  value={eligibility}
+                  onChange={e => setEligibility(e.target.value)}
+                  className="disco-input"
+                  style={{ width: '100%' }}
+                >
+                  <option value="All">All</option>
+                  <option value="IIIT">IIIT Only</option>
+                  <option value="Non-IIIT">Non-IIIT Only</option>
+                  <option value="Both">Open to All</option>
+                </select>
+              </div>
+
+              {/* Start Date Filter */}
+              <div>
+                <label style={{ 
+                  color: '#ffff00', 
+                  fontFamily: "'Anton', sans-serif",
+                  fontSize: '0.85rem',
+                  marginBottom: '0.5rem',
+                  display: 'block'
+                }}>
+                  📅 FROM DATE
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="disco-input"
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* End Date Filter */}
+              <div>
+                <label style={{ 
+                  color: '#ffff00', 
+                  fontFamily: "'Anton', sans-serif",
+                  fontSize: '0.85rem',
+                  marginBottom: '0.5rem',
+                  display: 'block'
+                }}>
+                  📅 TO DATE
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="disco-input"
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* Followed Clubs */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.5rem', 
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontFamily: "'Anton', sans-serif"
+                }}>
+                  <input 
+                    type="checkbox" 
+                    checked={scopeFollowed} 
+                    onChange={e => setScopeFollowed(e.target.checked)}
+                    style={{ width: '20px', height: '20px' }}
+                  />
+                  💜 Followed Clubs Only
+                </label>
+              </div>
+
+              {/* Clear Filters */}
+              <div>
+                <button
+                  onClick={clearFilters}
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem',
+                    background: 'rgba(255, 0, 110, 0.3)',
+                    border: '2px solid rgba(255, 0, 110, 0.6)',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontFamily: "'Anton', sans-serif"
+                  }}
+                >
+                  🗑️ Clear All Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Trending */}
       {trending.length > 0 && (
-        <div className="disco-card" style={{ padding: '1rem', margin: '0 auto 1.5rem', maxWidth: 1000 }}>
-          <h3 style={{ fontFamily: "'Bungee', cursive", color: '#ffff00', marginBottom: '0.5rem' }}>🔥 Trending (24h)</h3>
+        <div className="disco-card" style={{ padding: '1rem', margin: '0 auto 1.5rem', maxWidth: 1200 }}>
+          <h3 style={{ fontFamily: "'Bungee', cursive", color: '#ffff00', marginBottom: '0.8rem' }}>
+            🔥 Trending Events (Top 5 in 24h)
+          </h3>
           <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-            {trending.map(ev => (
-              <div key={ev._id} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.6rem 0.8rem', borderRadius: 10, color: '#fff' }}>
-                {ev.eventName} <span style={{ color: '#00ffff' }}>({ev.trendingCount24h})</span>
+            {trending.map((ev, idx) => (
+              <div 
+                key={ev._id} 
+                onClick={() => navigate(`/events/${ev._id}/register`)}
+                style={{ 
+                  background: idx === 0 
+                    ? 'linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,165,0,0.3))'
+                    : 'rgba(255,255,255,0.1)', 
+                  padding: '0.6rem 1rem', 
+                  borderRadius: 10, 
+                  color: '#fff',
+                  cursor: 'pointer',
+                  border: idx === 0 ? '2px solid gold' : '1px solid rgba(255,255,255,0.2)',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <span style={{ fontWeight: 'bold', color: idx === 0 ? '#ffd700' : '#00ffff' }}>
+                  #{idx + 1}
+                </span>
+                {ev.eventName} 
+                <span style={{ color: '#00ffff', fontSize: '0.85rem' }}>
+                  ({ev.trendingCount24h} registrations)
+                </span>
               </div>
             ))}
           </div>

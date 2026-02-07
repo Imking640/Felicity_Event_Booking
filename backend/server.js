@@ -16,11 +16,11 @@ app.use(cors({
   credentials: true
 }));
 
-// 2. JSON Parser - Parse incoming JSON requests
-app.use(express.json());
+// 2. JSON Parser - Parse incoming JSON requests (increased limit for image uploads)
+app.use(express.json({ limit: '50mb' }));
 
 // 3. URL Encoded Parser - Parse form data
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Database Connection Function
 const connectDB = async () => {

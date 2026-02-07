@@ -115,7 +115,7 @@ const PaymentApprovals = () => {
           💳 Payment Approvals
         </h1>
         <p style={{ fontSize: '1.1rem', color: '#ddd' }}>
-          Review and approve merchandise payment proofs
+          Review and approve payment proofs for merchandise and paid events
         </p>
       </div>
 
