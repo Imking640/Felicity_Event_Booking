@@ -10,6 +10,7 @@ const {
   uploadPaymentProof,
   verifyPayment,
   getPendingPayments,
+  getMerchandiseOrders,
   scanTicket,
   manualAttendanceOverride
 } = require('../controllers/registrationController');
@@ -24,6 +25,7 @@ router.post('/:id/payment', verifyToken, isParticipant, uploadPaymentProof);
 
 // Organizer routes - Payment Management
 router.get('/pending-payments', verifyToken, isOrganizer, getPendingPayments);
+router.get('/merchandise-orders', verifyToken, isOrganizer, getMerchandiseOrders);
 router.post('/:id/verify-payment', verifyToken, isOrganizer, verifyPayment);
 
 // Organizer routes - Attendance Management

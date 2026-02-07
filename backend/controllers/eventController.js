@@ -262,10 +262,16 @@ exports.createEvent = async (req, res) => {
     
     // Validate event type specific fields
     if (eventData.eventType === 'Merchandise') {
-      if (!eventData.merchandiseDetails || !eventData.merchandiseDetails.stockQuantity) {
+      if (!eventData.merchandiseDetails) {
         return res.status(400).json({
           success: false,
-          message: 'Merchandise events require stock quantity'
+          message: 'Merchandise events require merchandise details (stock quantity, variants, etc.)'
+        });
+      }
+      if (!eventData.merchandiseDetails.stockQuantity || eventData.merchandiseDetails.stockQuantity <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Merchandise events require a valid stock quantity greater than 0'
         });
       }
     }

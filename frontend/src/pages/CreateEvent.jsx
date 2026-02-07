@@ -21,6 +21,14 @@ const CreateEvent = () => {
     eligibility: 'All' // All, IIIT Only, Non-IIIT Only
   });
 
+  // Merchandise details
+  const [merchandiseDetails, setMerchandiseDetails] = useState({
+    stockQuantity: 100,
+    purchaseLimit: 5,
+    variants: []
+  });
+  const [newVariant, setNewVariant] = useState({ name: '', options: '' });
+
   // Custom form fields for registration
   const [customFields, setCustomFields] = useState([]);
   const [newField, setNewField] = useState({
@@ -84,6 +92,35 @@ const CreateEvent = () => {
     setCustomFields(newFields);
   };
 
+  // Merchandise variant handlers
+  const addVariant = () => {
+    if (!newVariant.name.trim()) {
+      showDiscoToast('Please enter variant name (e.g., Size, Color)', false);
+      return;
+    }
+    if (!newVariant.options.trim()) {
+      showDiscoToast('Please enter options (e.g., S, M, L, XL)', false);
+      return;
+    }
+    const variant = {
+      name: newVariant.name.trim(),
+      options: newVariant.options.split(',').map(o => o.trim()).filter(o => o)
+    };
+    setMerchandiseDetails(prev => ({
+      ...prev,
+      variants: [...prev.variants, variant]
+    }));
+    setNewVariant({ name: '', options: '' });
+    showDiscoToast('Variant added!', true);
+  };
+
+  const removeVariant = (index) => {
+    setMerchandiseDetails(prev => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -94,6 +131,11 @@ const CreateEvent = () => {
         tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [],
         customForm: customFields.length > 0 ? customFields : undefined
       };
+
+      // Add merchandise details if type is Merchandise
+      if (form.eventType === 'Merchandise') {
+        payload.merchandiseDetails = merchandiseDetails;
+      }
 
       const res = await api.post('/events', payload);
       if (res.data.success) {
@@ -195,6 +237,137 @@ const CreateEvent = () => {
               </div>
             </div>
           </div>
+
+          {/* Merchandise Details - Only show when type is Merchandise */}
+          {form.eventType === 'Merchandise' && (
+            <div className="disco-card" style={{ padding: '2rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ color: '#ff6b00', marginBottom: '1.5rem', fontFamily: "'Bungee', cursive" }}>
+                🛍️ Merchandise Details
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <label className="disco-label">📦 Stock Quantity *</label>
+                  <input 
+                    type="number" 
+                    value={merchandiseDetails.stockQuantity}
+                    onChange={(e) => setMerchandiseDetails(prev => ({ 
+                      ...prev, 
+                      stockQuantity: parseInt(e.target.value) || 0 
+                    }))}
+                    className="disco-input" 
+                    min={1}
+                    required
+                  />
+                  <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                    Total items available for sale
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="disco-label">🔢 Purchase Limit per Person</label>
+                  <input 
+                    type="number" 
+                    value={merchandiseDetails.purchaseLimit}
+                    onChange={(e) => setMerchandiseDetails(prev => ({ 
+                      ...prev, 
+                      purchaseLimit: parseInt(e.target.value) || 1 
+                    }))}
+                    className="disco-input" 
+                    min={1}
+                    max={10}
+                  />
+                  <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                    Max items one person can buy
+                  </div>
+                </div>
+              </div>
+
+              {/* Variants Section */}
+              <div style={{ 
+                background: 'rgba(255,107,0,0.1)', 
+                padding: '1.5rem', 
+                borderRadius: '12px',
+                border: '1px solid rgba(255,107,0,0.3)'
+              }}>
+                <h4 style={{ color: '#ff6b00', marginBottom: '1rem' }}>
+                  🎨 Product Variants (Size, Color, etc.)
+                </h4>
+                
+                {/* Existing Variants */}
+                {merchandiseDetails.variants.length > 0 && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    {merchandiseDetails.variants.map((variant, index) => (
+                      <div 
+                        key={index}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.75rem',
+                          background: 'rgba(255,255,255,0.1)',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '8px',
+                          marginBottom: '0.5rem'
+                        }}
+                      >
+                        <span style={{ fontWeight: 'bold', color: '#fff' }}>{variant.name}:</span>
+                        <span style={{ color: '#ccc' }}>{variant.options.join(', ')}</span>
+                        <button 
+                          type="button"
+                          onClick={() => removeVariant(index)}
+                          style={{ 
+                            marginLeft: 'auto',
+                            background: 'rgba(255,0,0,0.2)', 
+                            border: 'none', 
+                            borderRadius: '4px',
+                            padding: '0.25rem 0.5rem',
+                            cursor: 'pointer',
+                            color: '#ff6b6b'
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add New Variant */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '0.75rem', alignItems: 'end' }}>
+                  <div>
+                    <label className="disco-label" style={{ fontSize: '0.8rem' }}>Variant Name</label>
+                    <input 
+                      value={newVariant.name}
+                      onChange={(e) => setNewVariant(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g., Size"
+                      className="disco-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="disco-label" style={{ fontSize: '0.8rem' }}>Options (comma separated)</label>
+                    <input 
+                      value={newVariant.options}
+                      onChange={(e) => setNewVariant(prev => ({ ...prev, options: e.target.value }))}
+                      placeholder="e.g., S, M, L, XL"
+                      className="disco-input"
+                    />
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={addVariant}
+                    className="disco-button"
+                    style={{ padding: '0.7rem 1rem' }}
+                  >
+                    ➕ Add
+                  </button>
+                </div>
+                
+                <p style={{ color: '#888', fontSize: '0.8rem', marginTop: '0.75rem' }}>
+                  💡 Add variants like Size (S, M, L, XL) or Color (Red, Blue, Black)
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Dates & Timing */}
           <div className="disco-card" style={{ padding: '2rem', marginBottom: '1.5rem' }}>
@@ -329,26 +502,44 @@ const CreateEvent = () => {
               <h3 style={{ color: '#8a2be2', margin: 0, fontFamily: "'Bungee', cursive" }}>
                 📝 Custom Registration Form
               </h3>
-              <button 
-                type="button"
-                className="disco-button"
-                onClick={() => setShowFormBuilder(!showFormBuilder)}
-                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-              >
-                {showFormBuilder ? '➖ Hide Builder' : '➕ Add Custom Fields'}
-              </button>
             </div>
             
-            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              Add custom fields to collect additional information from participants during registration.
+            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Create a custom form that participants will fill out during registration.
               <br />
               <span style={{ color: '#ffff00' }}>⚠️ Note: Form cannot be edited after the first registration.</span>
             </p>
 
+            {/* Toggle to create custom form */}
+            {!showFormBuilder && customFields.length === 0 && (
+              <button 
+                type="button"
+                className="disco-button"
+                onClick={() => setShowFormBuilder(true)}
+                style={{ 
+                  padding: '1rem 2rem', 
+                  fontSize: '1rem',
+                  background: 'linear-gradient(135deg, #8a2be2, #6a1bb2)'
+                }}
+              >
+                ➕ Create Custom Form
+              </button>
+            )}
+
             {/* Current Custom Fields */}
             {customFields.length > 0 && (
               <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ color: '#00ffff', marginBottom: '0.75rem' }}>Current Fields ({customFields.length})</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h4 style={{ color: '#00ffff', margin: 0 }}>Form Fields ({customFields.length})</h4>
+                  <button 
+                    type="button"
+                    className="disco-button"
+                    onClick={() => setShowFormBuilder(!showFormBuilder)}
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                  >
+                    {showFormBuilder ? '➖ Close' : '➕ Add More'}
+                  </button>
+                </div>
                 <div style={{ display: 'grid', gap: '0.5rem' }}>
                   {customFields.map((field, index) => (
                     <div 

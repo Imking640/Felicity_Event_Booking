@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import DiscoDecorations, { createConfetti, showDiscoToast } from '../components/DiscoDecorations';
+import DiscussionForum from '../components/DiscussionForum';
 
 const EventDetailOrganizer = () => {
   const { id } = useParams();
@@ -255,6 +256,13 @@ const EventDetailOrganizer = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Discussion Forum (organizer view) */}
+        {activeTab === 'overview' && (
+          <div style={{ marginTop: '1.5rem' }}>
+            <DiscussionForum eventId={event._id} eventOrganizerId={event.organizer?._id || event.organizer} isRegistered={true} />
           </div>
         )}
 

@@ -171,13 +171,28 @@ const AttendanceScanner = () => {
     }
   };
 
-  const handleScan = async (ticketId) => {
+  const handleScan = async (scannedData) => {
     if (processing) return;
     
     setProcessing(true);
     setScanResult(null);
 
     try {
+      // Parse QR data - it could be JSON or plain ticketId
+      let ticketId = scannedData;
+      
+      // Try to parse as JSON (QR contains full ticket info)
+      try {
+        const parsed = JSON.parse(scannedData);
+        if (parsed.ticketId) {
+          ticketId = parsed.ticketId;
+          console.log('Extracted ticketId from QR JSON:', ticketId);
+        }
+      } catch (e) {
+        // Not JSON, use as-is (plain ticket ID)
+        console.log('Using scanned data as plain ticketId:', ticketId);
+      }
+      
       const response = await fetch('http://localhost:5000/api/registrations/tickets/scan', {
         method: 'POST',
         headers: {

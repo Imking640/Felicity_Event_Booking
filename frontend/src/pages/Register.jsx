@@ -152,17 +152,17 @@ const Register = () => {
       }
     }
 
+    // Email verification required for all users
+    if (!emailVerified) {
+      showDiscoToast('⚠️ Please verify your email first', false);
+      return;
+    }
+
     // Validate email format for Non-IIIT
     if (formData.participantType === 'Non-IIIT') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
         showDiscoToast('⚠️ Please enter a valid email address', false);
-        return;
-      }
-      
-      // Check if email is verified for Non-IIIT users
-      if (!emailVerified) {
-        showDiscoToast('⚠️ Please verify your email first', false);
         return;
       }
     }
@@ -292,7 +292,7 @@ const Register = () => {
                 placeholder="your@email.com"
                 disabled={emailVerified}
               />
-              {formData.participantType === 'Non-IIIT' && !emailVerified && (
+              {!emailVerified && (
                 <button
                   type="button"
                   onClick={sendVerificationCode}
@@ -338,20 +338,20 @@ const Register = () => {
                 * Use your IIIT email (ending with .iiit.ac.in)
               </p>
             )}
-            {formData.participantType === 'Non-IIIT' && !emailVerified && verificationSent && (
+            {!emailVerified && verificationSent && (
               <div style={{ marginTop: '0.8rem' }}>
                 <label className="disco-label" style={{ fontSize: '0.8rem' }}>🔐 ENTER 6-DIGIT CODE</label>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.3rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.3rem', alignItems: 'center' }}>
                   <input
                     type="text"
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     className="disco-input"
                     style={{ 
-                      flex: 1, 
+                      width: '180px',
                       textAlign: 'center', 
-                      letterSpacing: '8px',
-                      fontSize: '1.2rem',
+                      letterSpacing: '6px',
+                      fontSize: '1.1rem',
                       fontWeight: 'bold'
                     }}
                     placeholder="000000"
@@ -362,7 +362,7 @@ const Register = () => {
                     onClick={verifyCode}
                     disabled={verifyingEmail || verificationCode.length !== 6}
                     style={{
-                      padding: '0.8rem 1.2rem',
+                      padding: '0.75rem 1rem',
                       background: 'linear-gradient(135deg, #00ffff 0%, #00cccc 100%)',
                       border: '2px solid rgba(0, 255, 255, 0.6)',
                       borderRadius: '15px',
@@ -370,7 +370,7 @@ const Register = () => {
                       fontWeight: '700',
                       cursor: verificationCode.length !== 6 ? 'not-allowed' : 'pointer',
                       fontFamily: "'Anton', sans-serif",
-                      fontSize: '0.9rem',
+                      fontSize: '0.8rem',
                       opacity: verificationCode.length !== 6 ? 0.5 : 1
                     }}
                   >

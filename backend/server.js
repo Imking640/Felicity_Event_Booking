@@ -16,11 +16,11 @@ app.use(cors({
   credentials: true
 }));
 
-// 2. JSON Parser - Parse incoming JSON requests
-app.use(express.json());
+// 2. JSON Parser - Parse incoming JSON requests (increased limit for image uploads)
+app.use(express.json({ limit: '50mb' }));
 
 // 3. URL Encoded Parser - Parse form data
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Database Connection Function
 const connectDB = async () => {
@@ -55,6 +55,7 @@ app.use('/api/events', require('./routes/events'));
 app.use('/api/registrations', require('./routes/registrations'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/organizers', require('./routes/organizers'));
+app.use('/api/discussions', require('./routes/discussions'));
 // More routes will be added:
 // app.use('/api/participants', require('./routes/participants'));
 
