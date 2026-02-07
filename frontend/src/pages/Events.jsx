@@ -11,6 +11,7 @@ const Events = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [scopeFollowed, setScopeFollowed] = useState(false);
+  const [registeredEventIds, setRegisteredEventIds] = useState([]);
   
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -20,6 +21,27 @@ const Events = () => {
     fetchTrending();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory, search, scopeFollowed]);
+
+  // Fetch user's registrations to know which events they're registered for
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'participant') {
+      fetchMyRegistrations();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user]);
+
+  const fetchMyRegistrations = async () => {
+    try {
+      const res = await api.get('/registrations');
+      if (res.data.success) {
+        const regs = res.data.registrations || [];
+        const ids = regs.map(r => r.event?._id || r.event).filter(Boolean);
+        setRegisteredEventIds(ids);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -332,22 +354,29 @@ const Events = () => {
                 onClick={() => handleRegister(event._id)}
                 disabled={
                   (user && user.role !== 'participant') ||
-                  event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) ||
-                  !event.isRegistrationOpen
+                  (!registeredEventIds.includes(event._id) && (
+                    event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) ||
+                    !event.isRegistrationOpen
+                  ))
                 }
                 className="disco-button"
                 style={{ 
                   width: '100%',
-                  opacity: ((user && user.role !== 'participant') || event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen) ? 0.5 : 1,
-                  cursor: ((user && user.role !== 'participant') || event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen) ? 'not-allowed' : 'pointer'
+                  opacity: ((user && user.role !== 'participant') || (!registeredEventIds.includes(event._id) && (event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen))) ? 0.5 : 1,
+                  cursor: ((user && user.role !== 'participant') || (!registeredEventIds.includes(event._id) && (event.currentRegistrations >= (event.registrationLimit || event.maxParticipants) || !event.isRegistrationOpen))) ? 'not-allowed' : 'pointer',
+                  background: registeredEventIds.includes(event._id) ? 'linear-gradient(135deg, #00ff88, #00cc66)' : undefined
                 }}
               >
                 {(user && user.role !== 'participant')
                   ? '🔒 PARTICIPANTS ONLY'
+                  : registeredEventIds.includes(event._id)
+                  ? '💬 DISCUSS'
                   : !event.isRegistrationOpen
                   ? '🔒 REGISTRATION CLOSED'
                   : event.currentRegistrations >= (event.registrationLimit || event.maxParticipants)
                   ? '❌ HOUSE FULL'
+                  : event.eventType === 'Merchandise'
+                  ? '🛒 ORDER NOW'
                   : '🎟️ REGISTER NOW'}
               </button>
             </div>

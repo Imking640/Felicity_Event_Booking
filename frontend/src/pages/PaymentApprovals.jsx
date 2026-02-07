@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 const PaymentApprovals = () => {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending'); // pending, approved, rejected, all
@@ -10,23 +11,19 @@ const PaymentApprovals = () => {
   const [processing, setProcessing] = useState(null);
 
   useEffect(() => {
-    fetchPendingPayments();
+    fetchAllPayments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchPendingPayments = async () => {
+  const fetchAllPayments = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/registrations/pending-payments', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setRegistrations(data.registrations);
+      // Get all merchandise orders for organizer's events
+      const response = await api.get('/registrations/merchandise-orders');
+      if (response.data.success) {
+        setRegistrations(response.data.registrations);
       }
     } catch (error) {
-      console.error('Error fetching pending payments:', error);
+      console.error('Error fetching payments:', error);
     } finally {
       setLoading(false);
     }
@@ -39,23 +36,18 @@ const PaymentApprovals = () => {
 
     setProcessing(registrationId);
     try {
-      const response = await fetch(`http://localhost:5000/api/registrations/${registrationId}/verify-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ approved })
-      });
-
-      const data = await response.json();
+      const response = await api.post(`/registrations/${registrationId}/verify-payment`, { approved });
       
-      if (data.success) {
-        alert(data.message);
-        // Remove from list
-        setRegistrations(prev => prev.filter(r => r._id !== registrationId));
+      if (response.data.success) {
+        alert(response.data.message);
+        // Update local state
+        setRegistrations(prev => prev.map(r => 
+          r._id === registrationId 
+            ? { ...r, paymentProofStatus: approved ? 'approved' : 'rejected', status: approved ? 'confirmed' : 'rejected' }
+            : r
+        ));
       } else {
-        alert(data.message || 'Failed to process payment');
+        alert(response.data.message || 'Failed to process payment');
       }
     } catch (error) {
       console.error('Error processing payment:', error);
@@ -67,8 +59,21 @@ const PaymentApprovals = () => {
 
   const filteredRegistrations = registrations.filter(reg => {
     if (filter === 'all') return true;
+    if (filter === 'pending') {
+      // Show orders waiting for payment proof OR with pending proof
+      return reg.paymentProofStatus === 'pending' || (!reg.paymentProof && reg.status === 'pending');
+    }
     return reg.paymentProofStatus === filter;
   });
+
+  const getStatusCounts = () => {
+    const pending = registrations.filter(r => r.paymentProofStatus === 'pending' || (!r.paymentProof && r.status === 'pending')).length;
+    const approved = registrations.filter(r => r.paymentProofStatus === 'approved').length;
+    const rejected = registrations.filter(r => r.paymentProofStatus === 'rejected').length;
+    return { pending, approved, rejected };
+  };
+
+  const counts = getStatusCounts();
 
   if (loading) {
     return (
@@ -141,10 +146,10 @@ const PaymentApprovals = () => {
               backdropFilter: 'blur(10px)'
             }}
           >
-            {f === 'pending' && `⏳ Pending (${registrations.filter(r => r.paymentProofStatus === 'pending').length})`}
-            {f === 'approved' && `✅ Approved`}
-            {f === 'rejected' && `❌ Rejected`}
-            {f === 'all' && `📋 All`}
+            {f === 'pending' && `⏳ Pending (${counts.pending})`}
+            {f === 'approved' && `✅ Approved (${counts.approved})`}
+            {f === 'rejected' && `❌ Rejected (${counts.rejected})`}
+            {f === 'all' && `📋 All (${registrations.length})`}
           </button>
         ))}
       </div>
@@ -232,27 +237,50 @@ const PaymentApprovals = () => {
                       </div>
                     )}
 
+                    {reg.merchandiseDetails?.selectedVariants && Object.keys(reg.merchandiseDetails.selectedVariants).length > 0 && (
+                      <div>
+                        <div style={{ color: '#999', fontSize: '0.9rem' }}>Variants</div>
+                        <div style={{ fontWeight: '600', fontSize: '0.85rem' }}>
+                          {Object.entries(reg.merchandiseDetails.selectedVariants).map(([key, value]) => (
+                            <div key={key}>{key}: {value}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <div style={{ color: '#999', fontSize: '0.9rem' }}>Status</div>
                       <div style={{ 
                         fontWeight: '600',
                         color: reg.paymentProofStatus === 'pending' ? '#ffff00' : 
-                               reg.paymentProofStatus === 'approved' ? '#00ff88' : '#ff0055'
+                               reg.paymentProofStatus === 'approved' ? '#00ff88' : 
+                               !reg.paymentProof && reg.status === 'pending' ? '#ff8800' : '#ff0055'
                       }}>
-                        {reg.paymentProofStatus?.toUpperCase()}
+                        {!reg.paymentProof && reg.status === 'pending' 
+                          ? 'AWAITING PAYMENT' 
+                          : (reg.paymentProofStatus?.toUpperCase() || 'PENDING')}
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ color: '#999', fontSize: '0.9rem' }}>Uploaded At</div>
+                      <div style={{ color: '#999', fontSize: '0.9rem' }}>Order Date</div>
                       <div style={{ fontSize: '0.9rem' }}>
-                        {new Date(reg.paymentProofUploadedAt).toLocaleDateString()}
+                        {new Date(reg.registrationDate).toLocaleDateString()}
                       </div>
                     </div>
+
+                    {reg.paymentProofUploadedAt && (
+                      <div>
+                        <div style={{ color: '#999', fontSize: '0.9rem' }}>Proof Uploaded</div>
+                        <div style={{ fontSize: '0.9rem' }}>
+                          {new Date(reg.paymentProofUploadedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions for pending */}
-                  {reg.paymentProofStatus === 'pending' && (
+                  {reg.paymentProofStatus === 'pending' && reg.paymentProof && (
                     <div style={{
                       display: 'flex',
                       gap: '1rem',

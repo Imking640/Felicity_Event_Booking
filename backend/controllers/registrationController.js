@@ -93,13 +93,29 @@ exports.registerForEvent = async (req, res) => {
     // Increment registration count
     await event.incrementRegistrations();
     
-    // Merchandise: purchase implies registration; decrement stock; confirm and send ticket
-    if (event.eventType === 'Merchandise') {
+    // Merchandise with payment: requires payment proof approval before ticket
+    if (event.eventType === 'Merchandise' && event.registrationFee > 0) {
+      // Don't decrement stock yet - wait for payment approval
+      // Registration stays pending until payment approved
+      registration.status = 'pending';
+      registration.paymentStatus = 'pending';
+      await registration.save();
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Order placed! Please upload payment proof for approval.',
+        registration,
+        requiresPaymentProof: true
+      });
+    }
+    
+    // Merchandise with no fee: auto-confirm
+    if (event.eventType === 'Merchandise' && event.registrationFee === 0) {
       const qty = (registration.merchandiseDetails && registration.merchandiseDetails.quantity) ? registration.merchandiseDetails.quantity : 1;
       // Decrement stock
       event.merchandiseDetails.stockQuantity = Math.max(0, (event.merchandiseDetails.stockQuantity || 0) - qty);
       await event.save();
-      // Confirm immediately (purchase implies registration)
+      // Confirm immediately
       registration.paymentStatus = 'paid';
       registration.status = 'confirmed';
       await registration.save();
@@ -115,7 +131,7 @@ exports.registerForEvent = async (req, res) => {
         );
         return res.status(201).json({
           success: true,
-          message: 'Purchase successful! Ticket sent to your email.',
+          message: 'Order confirmed! Ticket sent to your email.',
           registration,
           ticket
         });
@@ -123,7 +139,7 @@ exports.registerForEvent = async (req, res) => {
         console.error('Ticket generation error:', ticketError);
         return res.status(201).json({
           success: true,
-          message: 'Purchase successful! Ticket will be sent shortly.',
+          message: 'Order confirmed! Ticket will be sent shortly.',
           registration
         });
       }
@@ -602,6 +618,42 @@ exports.getPendingPayments = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch pending payments',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get all merchandise orders for organizer's events
+// @route   GET /api/registrations/merchandise-orders
+// @access  Private (Organizer)
+exports.getMerchandiseOrders = async (req, res) => {
+  try {
+    // Get all merchandise events by this organizer
+    const events = await Event.find({ 
+      organizer: req.user.id,
+      eventType: 'Merchandise'
+    }).select('_id');
+    const eventIds = events.map(e => e._id);
+    
+    // Find all registrations for merchandise events
+    const registrations = await Registration.find({
+      event: { $in: eventIds }
+    })
+      .populate('event', 'eventName eventType registrationFee merchandiseDetails')
+      .populate('participant', 'firstName lastName email rollNumber')
+      .populate('paymentApprovedBy', 'organizerName firstName lastName')
+      .sort('-registrationDate');
+    
+    res.json({
+      success: true,
+      count: registrations.length,
+      registrations
+    });
+  } catch (error) {
+    console.error('Get merchandise orders error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch merchandise orders',
       error: error.message
     });
   }

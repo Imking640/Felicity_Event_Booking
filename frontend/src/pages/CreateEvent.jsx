@@ -329,26 +329,44 @@ const CreateEvent = () => {
               <h3 style={{ color: '#8a2be2', margin: 0, fontFamily: "'Bungee', cursive" }}>
                 📝 Custom Registration Form
               </h3>
-              <button 
-                type="button"
-                className="disco-button"
-                onClick={() => setShowFormBuilder(!showFormBuilder)}
-                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-              >
-                {showFormBuilder ? '➖ Hide Builder' : '➕ Add Custom Fields'}
-              </button>
             </div>
             
-            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              Add custom fields to collect additional information from participants during registration.
+            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Create a custom form that participants will fill out during registration.
               <br />
               <span style={{ color: '#ffff00' }}>⚠️ Note: Form cannot be edited after the first registration.</span>
             </p>
 
+            {/* Toggle to create custom form */}
+            {!showFormBuilder && customFields.length === 0 && (
+              <button 
+                type="button"
+                className="disco-button"
+                onClick={() => setShowFormBuilder(true)}
+                style={{ 
+                  padding: '1rem 2rem', 
+                  fontSize: '1rem',
+                  background: 'linear-gradient(135deg, #8a2be2, #6a1bb2)'
+                }}
+              >
+                ➕ Create Custom Form
+              </button>
+            )}
+
             {/* Current Custom Fields */}
             {customFields.length > 0 && (
               <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ color: '#00ffff', marginBottom: '0.75rem' }}>Current Fields ({customFields.length})</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h4 style={{ color: '#00ffff', margin: 0 }}>Form Fields ({customFields.length})</h4>
+                  <button 
+                    type="button"
+                    className="disco-button"
+                    onClick={() => setShowFormBuilder(!showFormBuilder)}
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                  >
+                    {showFormBuilder ? '➖ Close' : '➕ Add More'}
+                  </button>
+                </div>
                 <div style={{ display: 'grid', gap: '0.5rem' }}>
                   {customFields.map((field, index) => (
                     <div 
