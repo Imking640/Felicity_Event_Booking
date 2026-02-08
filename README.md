@@ -160,3 +160,8 @@ npm run dev    # Development: Start with nodemon (auto-restart)
 **Current Progress:** Task 1 Complete (5%)
 
 For detailed explanations, see `DEVELOPMENT_LOG.md` 📘
+
+
+
+Backend URL - https://felicity-event-booking.onrender.com/api
+frontend URL - https://felicity-event-booking.vercel.app

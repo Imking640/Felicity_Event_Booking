@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DiscoDecorations, { showDiscoToast, createConfetti } from '../components/DiscoDecorations';
 import ReCAPTCHA from 'react-google-recaptcha';
+import api from '../services/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -66,13 +67,8 @@ const Register = () => {
     setVerifyingEmail(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/send-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email })
-      });
-
-      const data = await response.json();
+      const response = await api.post('/auth/send-verification', { email: formData.email });
+      const data = response.data;
 
       if (data.success) {
         if (data.skipVerification) {
@@ -87,7 +83,7 @@ const Register = () => {
         showDiscoToast('⚠️ ' + data.message, false);
       }
     } catch (error) {
-      showDiscoToast('⚠️ Failed to send verification email', false);
+      showDiscoToast('⚠️ ' + (error.response?.data?.message || 'Failed to send verification email'), false);
     }
 
     setVerifyingEmail(false);
@@ -103,13 +99,11 @@ const Register = () => {
     setVerifyingEmail(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, code: verificationCode })
+      const response = await api.post('/auth/verify-email', { 
+        email: formData.email, 
+        code: verificationCode 
       });
-
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success && data.verified) {
         setEmailVerified(true);
@@ -118,7 +112,7 @@ const Register = () => {
         showDiscoToast('⚠️ ' + data.message, false);
       }
     } catch (error) {
-      showDiscoToast('⚠️ Failed to verify code', false);
+      showDiscoToast('⚠️ ' + (error.response?.data?.message || 'Failed to verify code'), false);
     }
 
     setVerifyingEmail(false);
