@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Html5Qrcode } from 'html5-qrcode';
+import api from '../services/api';
+
+// Get API base URL for direct fetch calls
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const AttendanceScanner = () => {
   const { eventId } = useParams();
@@ -49,7 +53,7 @@ const AttendanceScanner = () => {
   const fetchEventDetails = async () => {
     console.log('Fetching event details for:', eventId, 'with token:', token ? 'present' : 'missing');
     try {
-      const response = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+      const response = await fetch(`${API_BASE}/events/${eventId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -72,7 +76,7 @@ const AttendanceScanner = () => {
   const fetchAttendance = async () => {
     console.log('Fetching attendance for:', eventId);
     try {
-      const response = await fetch(`http://localhost:5000/api/events/${eventId}/attendance`, {
+      const response = await fetch(`${API_BASE}/events/${eventId}/attendance`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -193,7 +197,7 @@ const AttendanceScanner = () => {
         console.log('Using scanned data as plain ticketId:', ticketId);
       }
       
-      const response = await fetch('http://localhost:5000/api/registrations/tickets/scan', {
+      const response = await fetch(`${API_BASE}/registrations/tickets/scan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -242,7 +246,7 @@ const AttendanceScanner = () => {
     if (!window.confirm(`Mark as ${!currentStatus ? 'PRESENT' : 'ABSENT'}?`)) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/registrations/events/${eventId}/attendance/${registrationId}`, {
+      const response = await fetch(`${API_BASE}/registrations/events/${eventId}/attendance/${registrationId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -266,7 +270,7 @@ const AttendanceScanner = () => {
   };
 
   const exportCSV = () => {
-    window.open(`http://localhost:5000/api/events/${eventId}/attendance/export?token=${token}`, '_blank');
+    window.open(`${API_BASE}/events/${eventId}/attendance/export?token=${token}`, '_blank');
   };
 
   if (loading) {
