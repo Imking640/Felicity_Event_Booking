@@ -1,27 +1,22 @@
 const nodemailer = require('nodemailer');
 
-// Create email transporter with improved settings for production
+// Create email transporter - optimized for Brevo (Sendinblue)
 const createTransporter = () => {
   const config = {
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
     port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: process.env.EMAIL_PORT === '465', // true for 465, false for 587
+    secure: false, // Use STARTTLS
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD
     },
-    // Increased timeouts for cloud environments like Render
-    connectionTimeout: 60000, // 60 seconds
-    greetingTimeout: 30000,   // 30 seconds
-    socketTimeout: 60000,     // 60 seconds
-    // Pool connections for better reliability
-    pool: true,
-    maxConnections: 3,
-    maxMessages: 100,
-    // TLS settings
+    // Timeouts for cloud environments
+    connectionTimeout: 30000, // 30 seconds
+    greetingTimeout: 20000,   // 20 seconds
+    socketTimeout: 30000,     // 30 seconds
     tls: {
-      rejectUnauthorized: false, // Allow self-signed certs
-      minVersion: 'TLSv1.2'
+      rejectUnauthorized: false,
+      ciphers: 'SSLv3'
     }
   };
 
@@ -29,9 +24,7 @@ const createTransporter = () => {
   console.log('Email config:', {
     host: config.host,
     port: config.port,
-    secure: config.secure,
-    user: config.auth.user ? '***configured***' : 'NOT SET',
-    pass: config.auth.pass ? '***configured***' : 'NOT SET'
+    user: config.auth.user ? '***configured***' : 'NOT SET'
   });
 
   return nodemailer.createTransport(config);

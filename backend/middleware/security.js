@@ -92,30 +92,27 @@ const sendVerificationEmail = async (email) => {
 
     // Check if email service is configured
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.warn('⚠️ Email service not configured. Skipping email verification.');
-      return { success: true, message: 'Email verification skipped (not configured)', skipVerification: true };
+      console.warn('⚠️ Email service not configured.');
+      return { success: false, message: 'Email service not configured. Please contact administrator.' };
     }
 
-    // Create transporter with improved settings for cloud environments
+    // Create transporter - optimized for Brevo (Sendinblue)
     const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
       port: parseInt(process.env.EMAIL_PORT) || 587,
-      secure: process.env.EMAIL_PORT === '465',
+      secure: false, // Use STARTTLS
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
       },
-      // Increased timeouts for Render/cloud environments
-      connectionTimeout: 60000, // 60 seconds
-      greetingTimeout: 30000,   // 30 seconds  
-      socketTimeout: 60000,     // 60 seconds
+      // Timeouts for cloud environments
+      connectionTimeout: 30000, // 30 seconds
+      greetingTimeout: 20000,   // 20 seconds  
+      socketTimeout: 30000,     // 30 seconds
       tls: {
         rejectUnauthorized: false,
-        minVersion: 'TLSv1.2'
-      },
-      // Debug mode in development
-      debug: process.env.NODE_ENV === 'development',
-      logger: process.env.NODE_ENV === 'development'
+        ciphers: 'SSLv3'
+      }
     });
 
     // Generate verification code
@@ -180,30 +177,18 @@ const sendVerificationEmail = async (email) => {
 
   } catch (error) {
     console.error('❌ Email sending error:', error.message);
+    console.error('Error details:', error.code, error.responseCode);
     
     // Check if it's an invalid email error
     if (error.code === 'EENVELOPE' || error.responseCode === 550 || error.responseCode === 553) {
       return { success: false, message: 'Email address does not exist or is invalid' };
     }
     
-    // For timeout/connection errors in production, skip verification to not block users
+    // For timeout/connection errors - email verification is required
     if (error.code === 'ETIMEDOUT' || error.code === 'ECONNECTION' || error.code === 'ESOCKET' || 
         error.message.includes('timeout') || error.message.includes('Connection')) {
-      console.warn('⚠️ Email service timeout. Allowing registration without email verification.');
-      // Generate and store code anyway (user can request resend later)
-      const code = generateVerificationCode();
-      verificationCodes.set(email.toLowerCase(), {
-        code,
-        createdAt: Date.now(),
-        attempts: 0
-      });
-      return { success: true, message: 'Email service temporarily unavailable. You can proceed with registration.', skipVerification: true };
-    }
-    
-    // For other errors in dev mode, skip verification
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('⚠️ Email verification failed in dev mode. Skipping...');
-      return { success: true, message: 'Email verification skipped (dev mode)', skipVerification: true };
+      console.error('❌ Email service connection failed');
+      return { success: false, message: 'Email service temporarily unavailable. Please try again in a few minutes.' };
     }
     
     return { success: false, message: 'Failed to send verification email. Please try again.' };
