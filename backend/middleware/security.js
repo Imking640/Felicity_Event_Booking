@@ -96,18 +96,26 @@ const sendVerificationEmail = async (email) => {
       return { success: true, message: 'Email verification skipped (not configured)', skipVerification: true };
     }
 
-    // Create transporter
+    // Create transporter with improved settings for cloud environments
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: process.env.EMAIL_PORT || 587,
-      secure: false,
+      port: parseInt(process.env.EMAIL_PORT) || 587,
+      secure: process.env.EMAIL_PORT === '465',
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
       },
+      // Increased timeouts for Render/cloud environments
+      connectionTimeout: 60000, // 60 seconds
+      greetingTimeout: 30000,   // 30 seconds  
+      socketTimeout: 60000,     // 60 seconds
       tls: {
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1.2'
+      },
+      // Debug mode in development
+      debug: process.env.NODE_ENV === 'development',
+      logger: process.env.NODE_ENV === 'development'
     });
 
     // Generate verification code
@@ -178,7 +186,21 @@ const sendVerificationEmail = async (email) => {
       return { success: false, message: 'Email address does not exist or is invalid' };
     }
     
-    // For other errors, we might want to skip verification in dev mode
+    // For timeout/connection errors in production, skip verification to not block users
+    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNECTION' || error.code === 'ESOCKET' || 
+        error.message.includes('timeout') || error.message.includes('Connection')) {
+      console.warn('⚠️ Email service timeout. Allowing registration without email verification.');
+      // Generate and store code anyway (user can request resend later)
+      const code = generateVerificationCode();
+      verificationCodes.set(email.toLowerCase(), {
+        code,
+        createdAt: Date.now(),
+        attempts: 0
+      });
+      return { success: true, message: 'Email service temporarily unavailable. You can proceed with registration.', skipVerification: true };
+    }
+    
+    // For other errors in dev mode, skip verification
     if (process.env.NODE_ENV === 'development') {
       console.warn('⚠️ Email verification failed in dev mode. Skipping...');
       return { success: true, message: 'Email verification skipped (dev mode)', skipVerification: true };

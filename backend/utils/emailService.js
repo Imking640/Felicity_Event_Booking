@@ -1,16 +1,40 @@
 const nodemailer = require('nodemailer');
 
-// Create email transporter
+// Create email transporter with improved settings for production
 const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: false, // true for 465, false for other ports
+  const config = {
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT) || 587,
+    secure: process.env.EMAIL_PORT === '465', // true for 465, false for 587
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD
+    },
+    // Increased timeouts for cloud environments like Render
+    connectionTimeout: 60000, // 60 seconds
+    greetingTimeout: 30000,   // 30 seconds
+    socketTimeout: 60000,     // 60 seconds
+    // Pool connections for better reliability
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100,
+    // TLS settings
+    tls: {
+      rejectUnauthorized: false, // Allow self-signed certs
+      minVersion: 'TLSv1.2'
     }
+  };
+
+  // Log email config (without password) for debugging
+  console.log('Email config:', {
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    user: config.auth.user ? '***configured***' : 'NOT SET',
+    pass: config.auth.pass ? '***configured***' : 'NOT SET'
   });
+
+  return nodemailer.createTransport(config);
 };
 
 /**

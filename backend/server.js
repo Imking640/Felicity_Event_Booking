@@ -9,6 +9,10 @@ dotenv.config();
 // Initialize Express application
 const app = express();
 
+// Trust proxy - Required for Render/Heroku/etc. behind reverse proxy
+// Fixes: ERR_ERL_UNEXPECTED_X_FORWARDED_FOR with express-rate-limit
+app.set('trust proxy', 1);
+
 // Middleware Setup
 // 1. CORS - Allow frontend to access backend
 const allowedOrigins = [
