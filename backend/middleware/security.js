@@ -90,30 +90,11 @@ const sendVerificationEmail = async (email) => {
       return { success: false, message: 'Invalid email format' };
     }
 
-    // Check if email service is configured
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.warn('⚠️ Email service not configured.');
+    // Check if Brevo API key is configured
+    if (!process.env.BREVO_API_KEY) {
+      console.warn('⚠️ Email service not configured (BREVO_API_KEY missing).');
       return { success: false, message: 'Email service not configured. Please contact administrator.' };
     }
-
-    // Create transporter - optimized for Brevo (Sendinblue)
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
-      port: parseInt(process.env.EMAIL_PORT) || 587,
-      secure: false, // Use STARTTLS
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      },
-      // Timeouts for cloud environments
-      connectionTimeout: 30000, // 30 seconds
-      greetingTimeout: 20000,   // 20 seconds  
-      socketTimeout: 30000,     // 30 seconds
-      tls: {
-        rejectUnauthorized: false,
-        ciphers: 'SSLv3'
-      }
-    });
 
     // Generate verification code
     const code = generateVerificationCode();
@@ -125,12 +106,15 @@ const sendVerificationEmail = async (email) => {
       attempts: 0
     });
 
-    // Send verification email
-    const mailOptions = {
-      from: `"Felicity Events" <${process.env.EMAIL_USER}>`,
-      to: email,
+    // Send via Brevo HTTP API (more reliable than SMTP on cloud platforms)
+    const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: {
+        name: 'Felicity Events',
+        email: process.env.EMAIL_FROM || 'noreply@felicity.com'
+      },
+      to: [{ email: email }],
       subject: '🔐 Email Verification Code - Felicity Events',
-      html: `
+      htmlContent: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -168,27 +152,24 @@ const sendVerificationEmail = async (email) => {
         </body>
         </html>
       `
-    };
+    }, {
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      timeout: 30000 // 30 second timeout
+    });
 
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ Verification email sent to ${email}`);
-    
+    console.log(`✅ Verification email sent to ${email} via Brevo API`);
     return { success: true, message: 'Verification code sent to email' };
 
   } catch (error) {
-    console.error('❌ Email sending error:', error.message);
-    console.error('Error details:', error.code, error.responseCode);
+    console.error('❌ Email sending error:', error.response?.data || error.message);
     
-    // Check if it's an invalid email error
-    if (error.code === 'EENVELOPE' || error.responseCode === 550 || error.responseCode === 553) {
-      return { success: false, message: 'Email address does not exist or is invalid' };
-    }
-    
-    // For timeout/connection errors - email verification is required
-    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNECTION' || error.code === 'ESOCKET' || 
-        error.message.includes('timeout') || error.message.includes('Connection')) {
-      console.error('❌ Email service connection failed');
-      return { success: false, message: 'Email service temporarily unavailable. Please try again in a few minutes.' };
+    // Check for specific Brevo errors
+    if (error.response?.data?.code === 'invalid_parameter') {
+      return { success: false, message: 'Invalid email address' };
     }
     
     return { success: false, message: 'Failed to send verification email. Please try again.' };

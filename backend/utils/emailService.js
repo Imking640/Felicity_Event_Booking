@@ -1,33 +1,30 @@
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 
-// Create email transporter - optimized for Brevo (Sendinblue)
-const createTransporter = () => {
-  const config = {
-    host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false, // Use STARTTLS
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
+// Send email via Brevo API (more reliable on cloud platforms)
+const sendEmailViaBrevo = async (to, subject, htmlContent) => {
+  if (!process.env.BREVO_API_KEY) {
+    throw new Error('BREVO_API_KEY not configured');
+  }
+
+  const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
+    sender: {
+      name: 'Felicity Events',
+      email: process.env.EMAIL_FROM || 'noreply@felicity.com'
     },
-    // Timeouts for cloud environments
-    connectionTimeout: 30000, // 30 seconds
-    greetingTimeout: 20000,   // 20 seconds
-    socketTimeout: 30000,     // 30 seconds
-    tls: {
-      rejectUnauthorized: false,
-      ciphers: 'SSLv3'
-    }
-  };
-
-  // Log email config (without password) for debugging
-  console.log('Email config:', {
-    host: config.host,
-    port: config.port,
-    user: config.auth.user ? '***configured***' : 'NOT SET'
+    to: [{ email: to }],
+    subject: subject,
+    htmlContent: htmlContent
+  }, {
+    headers: {
+      'accept': 'application/json',
+      'api-key': process.env.BREVO_API_KEY,
+      'content-type': 'application/json'
+    },
+    timeout: 30000
   });
 
-  return nodemailer.createTransport(config);
+  return response.data;
 };
 
 /**
@@ -40,8 +37,6 @@ const createTransporter = () => {
  */
 const sendTicketEmail = async (participantOrEmail, eventOrName, ticketOrEvent, ticket) => {
   try {
-    const transporter = createTransporter();
-    
     // Handle both calling conventions:
     // Old: sendTicketEmail(participant, event, ticket)
     // New: sendTicketEmail(email, name, event, ticket)
@@ -158,7 +153,7 @@ const sendTicketEmail = async (participantOrEmail, eventOrName, ticketOrEvent, t
           
           <div class="footer">
             <p>This is an automated email. Please do not reply.</p>
-            <p>For queries, contact: ${process.env.EMAIL_USER}</p>
+            <p>For queries, contact: ${process.env.EMAIL_FROM || 'support@felicity.com'}</p>
             <p>&copy; 2026 Felicity Event Management. All rights reserved.</p>
           </div>
         </div>
@@ -166,25 +161,14 @@ const sendTicketEmail = async (participantOrEmail, eventOrName, ticketOrEvent, t
       </html>
     `;
     
-    // Email options
-    const mailOptions = {
-      from: `"Felicity Events" <${process.env.EMAIL_USER}>`,
-      to: recipientEmail,
-      subject: `🎫 Your Ticket for ${event.eventName}`,
-      html: htmlContent,
-      attachments: [
-        {
-          filename: `ticket-${ticketData.ticketId}.png`,
-          path: ticketData.qrCode,
-          cid: 'qrcode'
-        }
-      ]
-    };
+    // Send email via Brevo API
+    const result = await sendEmailViaBrevo(
+      recipientEmail,
+      `🎫 Your Ticket for ${event.eventName}`,
+      htmlContent
+    );
     
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
-    
-    console.log('Ticket email sent:', info.messageId);
+    console.log('Ticket email sent via Brevo:', result.messageId);
     
     // Update ticket to mark email as sent
     const Ticket = require('../models/Ticket');
@@ -195,10 +179,10 @@ const sendTicketEmail = async (participantOrEmail, eventOrName, ticketOrEvent, t
     
     return {
       success: true,
-      messageId: info.messageId
+      messageId: result.messageId
     };
   } catch (error) {
-    console.error('Email sending error:', error);
+    console.error('Email sending error:', error.response?.data || error.message);
     // Don't throw error - registration should succeed even if email fails
     return {
       success: false,
@@ -215,8 +199,6 @@ const sendTicketEmail = async (participantOrEmail, eventOrName, ticketOrEvent, t
  */
 const sendRegistrationConfirmation = async (participant, event) => {
   try {
-    const transporter = createTransporter();
-    
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -245,18 +227,15 @@ const sendRegistrationConfirmation = async (participant, event) => {
       </html>
     `;
     
-    const mailOptions = {
-      from: `"Felicity Events" <${process.env.EMAIL_USER}>`,
-      to: participant.email,
-      subject: `Registration Confirmed - ${event.eventName}`,
-      html: htmlContent
-    };
-    
-    await transporter.sendMail(mailOptions);
+    await sendEmailViaBrevo(
+      participant.email,
+      `Registration Confirmed - ${event.eventName}`,
+      htmlContent
+    );
     
     return { success: true };
   } catch (error) {
-    console.error('Email sending error:', error);
+    console.error('Email sending error:', error.response?.data || error.message);
     return { success: false, error: error.message };
   }
 };
@@ -270,8 +249,6 @@ const sendRegistrationConfirmation = async (participant, event) => {
  */
 const sendOTPEmail = async (email, otp, name = 'User') => {
   try {
-    const transporter = createTransporter();
-    
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -321,19 +298,16 @@ const sendOTPEmail = async (email, otp, name = 'User') => {
       </html>
     `;
     
-    const mailOptions = {
-      from: `"Felicity Events" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: `🔐 Your Verification OTP - ${otp}`,
-      html: htmlContent
-    };
+    const result = await sendEmailViaBrevo(
+      email,
+      `🔐 Your Verification OTP - ${otp}`,
+      htmlContent
+    );
+    console.log('OTP email sent to:', email);
     
-    const info = await transporter.sendMail(mailOptions);
-    console.log('OTP email sent to:', email, 'MessageId:', info.messageId);
-    
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error('OTP email sending error:', error);
+    console.error('OTP email sending error:', error.response?.data || error.message);
     return { success: false, error: error.message };
   }
 };
@@ -348,8 +322,6 @@ const sendOTPEmail = async (email, otp, name = 'User') => {
  */
 const sendPaymentPendingEmail = async (email, name, event, amount) => {
   try {
-    const transporter = createTransporter();
-    
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -404,18 +376,15 @@ const sendPaymentPendingEmail = async (email, name, event, amount) => {
       </html>
     `;
     
-    const mailOptions = {
-      from: `"Felicity Events" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: `💳 Payment Required - ${event.eventName}`,
-      html: htmlContent
-    };
-    
-    await transporter.sendMail(mailOptions);
+    await sendEmailViaBrevo(
+      email,
+      `💳 Payment Required - ${event.eventName}`,
+      htmlContent
+    );
     
     return { success: true };
   } catch (error) {
-    console.error('Payment pending email error:', error);
+    console.error('Payment pending email error:', error.response?.data || error.message);
     return { success: false, error: error.message };
   }
 };
