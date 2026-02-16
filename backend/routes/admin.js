@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken, isAdmin } = require('../middleware/auth');
+const { getSecurityStats } = require('../middleware/security');
 const {
   getAllOrganizers,
   createOrganizer,
@@ -18,6 +19,17 @@ router.use(verifyToken, isAdmin);
 
 // Dashboard stats
 router.get('/stats', getDashboardStats);
+
+// Security stats
+router.get('/security-stats', (req, res) => {
+  try {
+    const stats = getSecurityStats();
+    res.json({ success: true, stats });
+  } catch (error) {
+    console.error('Get security stats error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get security stats' });
+  }
+});
 
 // Organizer management
 router.get('/organizers', getAllOrganizers);

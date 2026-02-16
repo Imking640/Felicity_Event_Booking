@@ -52,8 +52,6 @@ router.get('/:id/events', optionalAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // Follow / Unfollow an organizer
 router.post('/:id/follow', verifyToken, isParticipant, async (req, res) => {
   try {
@@ -86,3 +84,5 @@ router.delete('/:id/follow', verifyToken, isParticipant, async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to unfollow organizer', error: error.message });
   }
 });
+
+module.exports = router;

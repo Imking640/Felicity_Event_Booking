@@ -171,8 +171,11 @@ const EventDetailOrganizer = () => {
                   📱 QR Scanner
                 </button>
               )}
-              <button className="disco-button" onClick={() => navigate(`/organizer/events`)}>
-                📋 Back
+              <button className="disco-button" onClick={() => navigate(`/organizer/events/${id}/edit`)}>
+                ✏️ Edit Event
+              </button>
+              <button className="disco-button" onClick={() => navigate(`/organizer/events`)} style={{ background: 'linear-gradient(90deg,#444,#666)' }}>
+                ◀ Back
               </button>
               <button className="disco-button" onClick={handleDelete} style={{ background: 'linear-gradient(90deg,#ff006e,#ff8fab)' }}>
                 🗑️ Delete

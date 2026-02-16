@@ -13,6 +13,7 @@ import Events from './pages/Events';
 import EventRegistration from './pages/EventRegistration';
 import DashboardRouter from './pages/DashboardRouter';
 import CreateEvent from './pages/CreateEvent';
+import EditEvent from './pages/EditEvent';
 import OrganizerEvents from './pages/OrganizerEvents';
 import EventParticipants from './pages/EventParticipants';
 import EventDetailOrganizer from './pages/EventDetailOrganizer';
@@ -77,6 +78,26 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+
+            {/* Admin Dashboard - redirects /admin to dashboard router */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardRouter />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Organizer Dashboard */}
+            <Route 
+              path="/organizer/dashboard" 
+              element={
+                <ProtectedRoute allowedRoles={["organizer"]}>
+                  <DashboardRouter />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/organizers" element={<OrganizersList />} />
             <Route path="/organizers/:id" element={<OrganizerView />} />
 
@@ -94,6 +115,15 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["organizer"]}>
                   <CreateEvent />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/organizer/events/:id/edit"
+              element={
+                <ProtectedRoute allowedRoles={["organizer"]}>
+                  <EditEvent />
                 </ProtectedRoute>
               }
             />

@@ -268,10 +268,9 @@ const Events = () => {
                   className="disco-input"
                   style={{ width: '100%' }}
                 >
-                  <option value="All">All</option>
-                  <option value="IIIT">IIIT Only</option>
-                  <option value="Non-IIIT">Non-IIIT Only</option>
-                  <option value="Both">Open to All</option>
+                  <option value="All">All Participants</option>
+                  <option value="IIIT Only">IIIT Students Only</option>
+                  <option value="Non-IIIT Only">Non-IIIT Only</option>
                 </select>
               </div>
 
@@ -542,10 +541,10 @@ const Events = () => {
                   ? '🔒 PARTICIPANTS ONLY'
                   : registeredEventIds.includes(event._id)
                   ? '💬 DISCUSS'
-                  : !event.isRegistrationOpen
-                  ? '🔒 REGISTRATION CLOSED'
                   : event.currentRegistrations >= (event.registrationLimit || event.maxParticipants)
                   ? '❌ HOUSE FULL'
+                  : !event.isRegistrationOpen
+                  ? (new Date() > new Date(event.registrationDeadline) ? '⏰ DEADLINE PASSED' : '🔒 REGISTRATION CLOSED')
                   : event.eventType === 'Merchandise'
                   ? '🛒 ORDER NOW'
                   : '🎟️ REGISTER NOW'}

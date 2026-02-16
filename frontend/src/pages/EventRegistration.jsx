@@ -446,8 +446,45 @@ const EventRegistration = () => {
           )}
         </div>
 
-        {/* Show Registration Form ONLY if not registered */}
-        {!isRegistered && (
+        {/* Registration Closed Message */}
+        {!isRegistered && !event.isRegistrationOpen && (
+          <div className="disco-card" style={{ 
+            padding: '2rem', 
+            marginBottom: '1.5rem', 
+            textAlign: 'center',
+            background: 'rgba(255,0,0,0.1)',
+            border: '2px solid rgba(255,0,0,0.3)'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
+            <h3 style={{ 
+              fontFamily: "'Bungee', cursive", 
+              color: '#ff6666', 
+              marginBottom: '0.75rem' 
+            }}>
+              Registration Closed
+            </h3>
+            <p style={{ color: '#ccc', marginBottom: '1rem' }}>
+              {event.blockReason || (
+                new Date() > new Date(event.registrationDeadline)
+                  ? '⏰ The registration deadline has passed.'
+                  : event.currentRegistrations >= (event.registrationLimit || event.maxParticipants)
+                  ? '👥 This event has reached its maximum participant limit.'
+                  : 'Registration is no longer available for this event.'
+              )}
+            </p>
+            <button 
+              type="button"
+              className="disco-button"
+              onClick={() => navigate('/events')}
+              style={{ padding: '0.75rem 2rem' }}
+            >
+              ◀ Browse Other Events
+            </button>
+          </div>
+        )}
+
+        {/* Show Registration Form ONLY if not registered AND registration is open */}
+        {!isRegistered && event.isRegistrationOpen && (
           <form onSubmit={handleSubmit}>
             {/* Merchandise Details */}
             {event.eventType === 'Merchandise' && event.merchandiseDetails && (

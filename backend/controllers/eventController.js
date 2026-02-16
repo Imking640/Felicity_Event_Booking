@@ -2,6 +2,7 @@ const Event = require('../models/Event');
 const Registration = require('../models/Registration');
 const { createTicket } = require('../utils/qrGenerator');
 const { sendTicketEmail } = require('../utils/emailService');
+const { postToDiscord } = require('../utils/discordService');
 
 // @desc    Get all events with filters
 // @route   GET /api/events
@@ -464,6 +465,19 @@ exports.publishEvent = async (req, res) => {
     event.status = 'published';
     event.publishedAt = Date.now();
     await event.save();
+    
+    // Post to Discord when event is published
+    try {
+      // Populate organizer for Discord message
+      await event.populate('organizer', 'organizerName email category');
+      const discordResult = await postToDiscord(event, 'published');
+      if (discordResult.success) {
+        console.log('✅ Event posted to Discord:', event.eventName);
+      }
+    } catch (discordError) {
+      console.error('⚠️ Failed to post to Discord (non-critical):', discordError.message);
+      // Don't fail the publish if Discord posting fails
+    }
     
     res.json({
       success: true,

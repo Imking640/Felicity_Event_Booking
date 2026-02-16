@@ -521,6 +521,44 @@ const clearPasswordChangeOTP = (userId) => {
   passwordChangeOTPs.delete(userId.toString());
 };
 
+// Get security statistics for admin dashboard
+const getSecurityStats = () => {
+  const now = Date.now();
+  const fifteenMinutesAgo = now - (15 * 60 * 1000);
+  
+  let blockedCount = 0;
+  let suspiciousCount = 0;
+  const recentAttempts = [];
+  
+  for (const [key, value] of failedLoginAttempts.entries()) {
+    if (value.count >= 5 && value.lastAttempt > fifteenMinutesAgo) {
+      blockedCount++;
+    }
+    if (value.count >= 3) {
+      suspiciousCount++;
+      const [ip, email] = key.split('-');
+      recentAttempts.push({
+        ip: ip || 'Unknown',
+        email: email || 'Unknown',
+        attempts: value.count,
+        lastAttempt: new Date(value.lastAttempt),
+        isBlocked: value.count >= 5 && value.lastAttempt > fifteenMinutesAgo
+      });
+    }
+  }
+  
+  // Sort by most recent
+  recentAttempts.sort((a, b) => b.lastAttempt - a.lastAttempt);
+  
+  return {
+    blockedIPs: blockedCount,
+    suspiciousAttempts: suspiciousCount,
+    recentAttempts: recentAttempts.slice(0, 20), // Last 20
+    pendingVerifications: verificationCodes.size,
+    activeOTPs: passwordChangeOTPs.size
+  };
+};
+
 module.exports = {
   loginLimiter,
   registerLimiter,
@@ -537,5 +575,6 @@ module.exports = {
   sendPasswordChangeOTP,
   verifyPasswordChangeOTP,
   isPasswordOTPVerified,
-  clearPasswordChangeOTP
+  clearPasswordChangeOTP,
+  getSecurityStats
 };
