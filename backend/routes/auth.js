@@ -29,4 +29,9 @@ router.post('/logout', verifyToken, authController.logout);
 router.put('/profile', verifyToken, authController.updateProfile);
 router.post('/change-password', verifyToken, authController.changePassword);
 
+// Password change with OTP verification
+router.post('/request-password-change', verifyToken, authController.requestPasswordChange);
+router.post('/verify-password-otp', verifyToken, authController.verifyPasswordOTP);
+router.post('/change-password-with-otp', verifyToken, authController.changePasswordWithOTP);
+
 module.exports = router;

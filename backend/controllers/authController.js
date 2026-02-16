@@ -1,19 +1,39 @@
 const { User, Participant, Organizer, Admin } = require('../models/User');
 const validator = require('validator');
-const { verifyEmailExists, verifyRecaptcha, recordFailedLogin, resetFailedLogin, sendVerificationEmail, verifyEmailCode } = require('../middleware/security');
+const { verifyEmailExists, verifyRecaptcha, recordFailedLogin, resetFailedLogin, sendVerificationEmail, verifyEmailCode, sendPasswordChangeOTP, verifyPasswordChangeOTP, isPasswordOTPVerified, clearPasswordChangeOTP } = require('../middleware/security');
 
 // @desc    Send email verification code
 // @route   POST /api/auth/send-verification
 // @access  Public
 exports.sendEmailVerification = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, participantType } = req.body;
 
     if (!email) {
       return res.status(400).json({
         success: false,
         message: 'Email is required'
       });
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+
+    // IIIT student email validation
+    if (participantType === 'IIIT') {
+      const iiitEmailRegex = /^[a-zA-Z0-9._%+-]+@(students\.iiit\.ac\.in|iiit\.ac\.in|research\.iiit\.ac\.in)$/i;
+      if (!iiitEmailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'IIIT students must use their official IIIT email (@students.iiit.ac.in, @iiit.ac.in, or @research.iiit.ac.in)'
+        });
+      }
     }
 
     // Check if email already registered
@@ -428,6 +448,91 @@ exports.changePassword = async (req, res) => {
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ success: false, message: 'Failed to change password', error: error.message });
+  }
+};
+
+// @desc    Request OTP for password change
+// @route   POST /api/auth/request-password-change
+// @access  Private
+exports.requestPasswordChange = async (req, res) => {
+  try {
+    const result = await sendPasswordChangeOTP(req.user.id, req.user.email);
+    
+    if (result.success) {
+      res.json({ success: true, message: result.message });
+    } else {
+      res.status(400).json({ success: false, message: result.message });
+    }
+  } catch (error) {
+    console.error('Request password change error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send OTP' });
+  }
+};
+
+// @desc    Verify OTP for password change
+// @route   POST /api/auth/verify-password-otp
+// @access  Private
+exports.verifyPasswordOTP = async (req, res) => {
+  try {
+    const { otp } = req.body;
+    
+    if (!otp) {
+      return res.status(400).json({ success: false, message: 'OTP is required' });
+    }
+    
+    const result = verifyPasswordChangeOTP(req.user.id, otp);
+    
+    if (result.valid) {
+      res.json({ success: true, message: result.message });
+    } else {
+      res.status(400).json({ success: false, message: result.message });
+    }
+  } catch (error) {
+    console.error('Verify password OTP error:', error);
+    res.status(500).json({ success: false, message: 'Verification failed' });
+  }
+};
+
+// @desc    Change password with verified OTP
+// @route   POST /api/auth/change-password-with-otp
+// @access  Private
+exports.changePasswordWithOTP = async (req, res) => {
+  try {
+    const { otp, newPassword } = req.body;
+    
+    if (!otp || !newPassword) {
+      return res.status(400).json({ success: false, message: 'OTP and new password are required' });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+    
+    // Verify OTP is valid
+    if (!isPasswordOTPVerified(req.user.id)) {
+      // Try to verify it now
+      const verifyResult = verifyPasswordChangeOTP(req.user.id, otp);
+      if (!verifyResult.valid) {
+        return res.status(400).json({ success: false, message: verifyResult.message });
+      }
+    }
+    
+    // Change password
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    user.password = newPassword;
+    await user.save();
+    
+    // Clear OTP
+    clearPasswordChangeOTP(req.user.id);
+    
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password with OTP error:', error);
+    res.status(500).json({ success: false, message: 'Failed to change password' });
   }
 };
 

@@ -64,10 +64,22 @@ const Register = () => {
       return;
     }
 
+    // Frontend validation for IIIT email
+    if (formData.participantType === 'IIIT') {
+      const iiitEmailRegex = /^[a-zA-Z0-9._%+-]+@(students\.iiit\.ac\.in|iiit\.ac\.in|research\.iiit\.ac\.in)$/i;
+      if (!iiitEmailRegex.test(formData.email)) {
+        showDiscoToast('⚠️ IIIT students must use their official IIIT email (@students.iiit.ac.in, @iiit.ac.in, or @research.iiit.ac.in)', false);
+        return;
+      }
+    }
+
     setVerifyingEmail(true);
 
     try {
-      const response = await api.post('/auth/send-verification', { email: formData.email });
+      const response = await api.post('/auth/send-verification', { 
+        email: formData.email,
+        participantType: formData.participantType 
+      });
       const data = response.data;
 
       if (data.success) {

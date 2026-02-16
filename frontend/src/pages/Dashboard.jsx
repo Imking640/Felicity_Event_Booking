@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import DiscoDecorations from '../components/DiscoDecorations';
@@ -9,6 +9,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('normal');
 
   useEffect(() => {
     const load = async () => {
@@ -16,31 +17,90 @@ const Dashboard = () => {
         const res = await api.get('/registrations/summary');
         setSummary(res.data.summary || null);
       } catch (e) {
-        // silent fail on dashboard
+        console.error('Failed to load registrations:', e);
       } finally {
         setLoading(false);
       }
     };
     if (user?.role === 'participant') load();
+    else setLoading(false);
   }, [user]);
 
-  const stats = useMemo(() => {
-    const all = summary ? [
+  // Get upcoming events (registered events that haven't started yet)
+  const getUpcomingEvents = () => {
+    if (!summary) return [];
+    const now = new Date();
+    const allRegistrations = [
       ...summary.normal,
-      ...summary.merchandise,
-      ...summary.completed,
-      ...summary.cancelledRejected
-    ] : [];
-    const registered = all.length;
-    const attended = all.filter(r => r.attended).length;
-    const totalSpent = all.reduce((sum, r) => sum + (r.amountPaid || 0), 0);
-    return { registered, attended, totalSpent };
-  }, [summary]);
+      ...summary.merchandise
+    ];
+    return allRegistrations.filter(r => {
+      const eventDate = new Date(r.event?.eventStartDate);
+      return eventDate > now && r.status === 'confirmed';
+    });
+  };
+
+  // Get tab data
+  const getTabData = () => {
+    if (!summary) return [];
+    switch (activeTab) {
+      case 'normal':
+        return summary.normal || [];
+      case 'merchandise':
+        return summary.merchandise || [];
+      case 'completed':
+        return summary.completed || [];
+      case 'cancelled':
+        return summary.cancelledRejected || [];
+      default:
+        return [];
+    }
+  };
+
+  const tabs = [
+    { key: 'normal', label: 'Normal', color: '#00ffff' },
+    { key: 'merchandise', label: 'Merchandise', color: '#ff00ff' },
+    { key: 'completed', label: 'Completed', color: '#00ff00' },
+    { key: 'cancelled', label: 'Cancelled/Rejected', color: '#ff6666' }
+  ];
+
+  const getStatusBadge = (registration) => {
+    const statusColors = {
+      'confirmed': { bg: '#00ff00', text: '#000' },
+      'pending': { bg: '#ffff00', text: '#000' },
+      'cancelled': { bg: '#ff6666', text: '#fff' },
+      'rejected': { bg: '#ff0000', text: '#fff' },
+      'payment_pending': { bg: '#ff9900', text: '#000' }
+    };
+    const style = statusColors[registration.status] || statusColors['pending'];
+    return (
+      <span style={{
+        background: style.bg,
+        color: style.text,
+        padding: '0.2rem 0.6rem',
+        borderRadius: '12px',
+        fontSize: '0.75rem',
+        fontWeight: 'bold',
+        textTransform: 'uppercase'
+      }}>
+        {registration.status?.replace('_', ' ')}
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>
+        <DiscoDecorations />
+        <p>Loading your dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ 
       padding: '2rem 1rem', 
-      maxWidth: '1400px', 
+      maxWidth: '1200px', 
       margin: '0 auto',
       minHeight: 'calc(100vh - 80px)',
       position: 'relative'
@@ -49,399 +109,177 @@ const Dashboard = () => {
 
       {/* Welcome Header */}
       <div className="disco-card" style={{
-        padding: '3rem',
+        padding: '2rem',
         marginBottom: '2rem',
         textAlign: 'center',
         position: 'relative',
         zIndex: 10
       }}>
-        <div className="logo-disco" style={{ margin: '0 auto 2rem' }} />
-        
         <h1 style={{ 
-          fontSize: 'clamp(2rem, 5vw, 3rem)',
+          fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
           fontFamily: "'Bungee', cursive",
           marginBottom: '0.5rem',
           color: '#ffff00',
-          textShadow: '0 0 20px rgba(255, 255, 0, 0.8), 0 0 40px rgba(255, 0, 255, 0.4)',
-          letterSpacing: '2px'
+          textShadow: '0 0 20px rgba(255, 255, 0, 0.8)'
         }}>
-          WELCOME BACK! 🎉
+          Welcome, {user?.firstName || 'Participant'}! 🎉
         </h1>
-        <p className="glow-text" style={{ 
-          color: '#00ffff', 
-          fontSize: '1.2rem',
-          fontFamily: "'Anton', sans-serif",
-          textTransform: 'uppercase',
-          letterSpacing: '2px'
-        }}>
-          {user?.firstName || user?.organizerName}
-        </p>
         <p style={{
-          color: '#ff00ff',
+          color: '#00ffff',
           fontSize: '1rem',
-          marginTop: '1rem',
           fontFamily: "'Anton', sans-serif"
         }}>
           Ready to make Felicity 2026 unforgettable?
         </p>
       </div>
-      
-      {/* Profile Card */}
-      <div className="disco-card" style={{ 
-        padding: '2.5rem',
-        marginBottom: '2rem',
-        position: 'relative',
-        zIndex: 10
-      }}>
-        <h2 style={{
-          fontSize: '1.8rem',
-          marginBottom: '2rem',
-          color: '#ff00ff',
-          fontFamily: "'Bungee', cursive",
-          textShadow: '0 0 15px rgba(255, 0, 255, 0.6)',
-          textAlign: 'center'
-        }}>
-          👤 YOUR PROFILE
-        </h2>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '1.5rem'
-        }}>
-          <div style={{
-            background: 'rgba(255, 255, 0, 0.1)',
-            padding: '1.5rem',
-            borderRadius: '15px',
-            border: '2px solid rgba(255, 255, 0, 0.3)',
-            backdropFilter: 'blur(10px)'
-          }}>
-            <div style={{
-              fontSize: '2rem',
-              marginBottom: '0.5rem'
-            }}>📧</div>
-            <p style={{
-              color: '#ffff00',
-              fontSize: '0.8rem',
-              marginBottom: '0.5rem',
-              fontFamily: "'Anton', sans-serif",
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}>Email</p>
-            <p style={{
-              color: '#fff',
-              fontSize: '1rem',
-              fontFamily: "'Anton', sans-serif",
-              wordBreak: 'break-all'
-            }}>
-              {user?.email}
-            </p>
-          </div>
-
-          {user?.firstName && (
-            <div style={{
-              background: 'rgba(0, 255, 255, 0.1)',
-              padding: '1.5rem',
-              borderRadius: '15px',
-              border: '2px solid rgba(0, 255, 255, 0.3)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <div style={{
-                fontSize: '2rem',
-                marginBottom: '0.5rem'
-              }}>👤</div>
-              <p style={{
-                color: '#00ffff',
-                fontSize: '0.8rem',
-                marginBottom: '0.5rem',
-                fontFamily: "'Anton', sans-serif",
-                textTransform: 'uppercase',
-                letterSpacing: '1px'
-              }}>Full Name</p>
-              <p style={{
-                color: '#fff',
-                fontSize: '1rem',
-                fontFamily: "'Anton', sans-serif"
-              }}>
-                {user.firstName} {user.lastName}
-              </p>
-            </div>
-          )}
-
-          {user?.participantType && (
-            <div style={{
-              background: 'rgba(255, 0, 255, 0.1)',
-              padding: '1.5rem',
-              borderRadius: '15px',
-              border: '2px solid rgba(255, 0, 255, 0.3)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <div style={{
-                fontSize: '2rem',
-                marginBottom: '0.5rem'
-              }}>🎓</div>
-              <p style={{
-                color: '#ff00ff',
-                fontSize: '0.8rem',
-                marginBottom: '0.5rem',
-                fontFamily: "'Anton', sans-serif",
-                textTransform: 'uppercase',
-                letterSpacing: '1px'
-              }}>Type</p>
-              <p style={{
-                color: '#fff',
-                fontSize: '1rem',
-                fontFamily: "'Anton', sans-serif"
-              }}>
-                {user.participantType} Student
-              </p>
-            </div>
-          )}
-
-          {user?.contactNumber && (
-            <div style={{
-              background: 'rgba(255, 0, 110, 0.1)',
-              padding: '1.5rem',
-              borderRadius: '15px',
-              border: '2px solid rgba(255, 0, 110, 0.3)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <div style={{
-                fontSize: '2rem',
-                marginBottom: '0.5rem'
-              }}>📱</div>
-              <p style={{
-                color: '#ff006e',
-                fontSize: '0.8rem',
-                marginBottom: '0.5rem',
-                fontFamily: "'Anton', sans-serif",
-                textTransform: 'uppercase',
-                letterSpacing: '1px'
-              }}>Contact</p>
-              <p style={{
-                color: '#fff',
-                fontSize: '1rem',
-                fontFamily: "'Anton', sans-serif"
-              }}>
-                {user.contactNumber}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '1.5rem',
-        marginBottom: '2rem',
-        position: 'relative',
-        zIndex: 10,
-        justifyContent: 'center'
-      }}>
-        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', flex: '1 1 300px', maxWidth: '400px' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎭</div>
-          <h3 style={{
-            color: '#ff00ff',
-            fontSize: '1.5rem',
-            marginBottom: '1rem',
-            fontFamily: "'Bungee', cursive",
-            textShadow: '0 0 10px rgba(255, 0, 255, 0.6)'
-          }}>
-            Browse Events
-          </h3>
-          <p style={{
-            color: '#fff',
-            marginBottom: '1.5rem',
-            fontFamily: "'Anton', sans-serif",
-            lineHeight: '1.6'
-          }}>
-            Discover amazing workshops, competitions, and cultural events
-          </p>
-          <button
-            onClick={() => navigate('/events')}
-            className="disco-button"
-            style={{ width: '100%' }}
-          >
-            🎪 EXPLORE NOW
-          </button>
-        </div>
-
-        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', flex: '1 1 300px', maxWidth: '400px' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎫</div>
-          <h3 style={{
-            color: '#00ffff',
-            fontSize: '1.5rem',
-            marginBottom: '1rem',
-            fontFamily: "'Bungee', cursive",
-            textShadow: '0 0 10px rgba(0, 255, 255, 0.6)'
-          }}>
-            My Registrations
-          </h3>
-          <p style={{
-            color: '#fff',
-            marginBottom: '1.5rem',
-            fontFamily: "'Anton', sans-serif",
-            lineHeight: '1.6'
-          }}>
-            View all your registered events and QR tickets
-          </p>
-          <button
-            className="disco-button"
-            style={{ width: '100%' }}
-          >
-            📋 VIEW TICKETS
-          </button>
-        </div>
-
-        <div className="feature-card-disco" style={{ padding: '2rem', textAlign: 'center', flex: '1 1 300px', maxWidth: '400px' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⚙️</div>
-          <h3 style={{
-            color: '#ffff00',
-            fontSize: '1.5rem',
-            marginBottom: '1rem',
-            fontFamily: "'Bungee', cursive",
-            textShadow: '0 0 10px rgba(255, 255, 0, 0.6)'
-          }}>
-            Edit Profile
-          </h3>
-          <p style={{
-            color: '#fff',
-            marginBottom: '1.5rem',
-            fontFamily: "'Anton', sans-serif",
-            lineHeight: '1.6'
-          }}>
-            Update your personal information and preferences
-          </p>
-          <button
-            className="disco-button"
-            style={{ width: '100%' }}
-            onClick={() => navigate('/profile')}
-          >
-            ✏️ UPDATE INFO
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Section */}
+      {/* Upcoming Events Section */}
       <div className="disco-card" style={{
-        padding: '3rem',
+        padding: '1.5rem',
+        marginBottom: '2rem',
         position: 'relative',
         zIndex: 10
       }}>
         <h2 style={{
-          fontSize: '1.8rem',
-          marginBottom: '2rem',
-          color: '#ffff00',
-          fontFamily: "'Bungee', cursive",
-          textShadow: '0 0 15px rgba(255, 255, 0, 0.6)',
-          textAlign: 'center'
+          fontSize: '1.5rem',
+          marginBottom: '1.5rem',
+          color: '#ff00ff',
+          fontFamily: "'Bungee', cursive"
         }}>
-          📊 YOUR STATS
+          📅 Upcoming Events
         </h2>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '2rem',
-          textAlign: 'center'
-        }}>
-          <div>
-            <h3 className="glow-text" style={{
-              fontSize: '4rem',
-              color: '#ff00ff',
-              marginBottom: '0.5rem',
-              fontFamily: "'Bungee', cursive"
-            }}>
-              {stats.registered || 0}
-            </h3>
-            <p style={{
-              color: '#fff',
-              fontSize: '1.1rem',
-              fontFamily: "'Anton', sans-serif",
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}>
-              Events Registered
-            </p>
+        {getUpcomingEvents().length > 0 ? (
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {getUpcomingEvents().map((reg) => (
+              <div key={reg._id} style={{
+                background: 'rgba(255,255,255,0.05)',
+                padding: '1rem',
+                borderRadius: '10px',
+                border: '1px solid rgba(0, 255, 255, 0.3)',
+                display: 'grid',
+                gridTemplateColumns: '1fr auto',
+                gap: '1rem',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <h4 style={{ color: '#ffff00', marginBottom: '0.3rem', fontFamily: "'Bungee', cursive" }}>
+                    {reg.event?.eventName || 'Unknown Event'}
+                  </h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.9rem', color: '#ccc' }}>
+                    <span>🎭 {reg.event?.eventType || '-'}</span>
+                    <span>👤 {reg.event?.organizer?.organizerName || '-'}</span>
+                    <span>📅 {reg.event?.eventStartDate ? new Date(reg.event.eventStartDate).toLocaleDateString('en-IN', {
+                      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+                    }) : '-'}</span>
+                    <span>🕐 {reg.event?.eventStartDate ? new Date(reg.event.eventStartDate).toLocaleTimeString('en-IN', {
+                      hour: '2-digit', minute: '2-digit'
+                    }) : '-'}</span>
+                  </div>
+                </div>
+                <button 
+                  className="disco-button" 
+                  onClick={() => navigate(`/events/${reg.event?._id}/register`)}
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                >
+                  View Details
+                </button>
+              </div>
+            ))}
           </div>
-
-          <div>
-            <h3 className="glow-text" style={{
-              fontSize: '4rem',
-              color: '#00ffff',
-              marginBottom: '0.5rem',
-              fontFamily: "'Bungee', cursive"
-            }}>
-              {stats.attended || 0}
-            </h3>
-            <p style={{
-              color: '#fff',
-              fontSize: '1.1rem',
-              fontFamily: "'Anton', sans-serif",
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}>
-              Events Attended
-            </p>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+            <p>No upcoming events. <span style={{ color: '#00ffff', cursor: 'pointer' }} onClick={() => navigate('/events')}>Browse events</span> to register!</p>
           </div>
-
-          <div>
-            <h3 className="glow-text" style={{
-              fontSize: '4rem',
-              color: '#ffff00',
-              marginBottom: '0.5rem',
-              fontFamily: "'Bungee', cursive"
-            }}>
-              ₹{stats.totalSpent || 0}
-            </h3>
-            <p style={{
-              color: '#fff',
-              fontSize: '1.1rem',
-              fontFamily: "'Anton', sans-serif",
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}>
-              Total Spent
-            </p>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Upcoming Events preview */}
-      {user?.role === 'participant' && (
-        <div className="disco-card" style={{ padding: '2rem', marginTop: '1.5rem' }}>
-          <h2 style={{
-            fontSize: '1.6rem',
-            marginBottom: '1rem',
-            color: '#ff00ff',
-            fontFamily: "'Bungee', cursive",
-            textShadow: '0 0 15px rgba(255, 0, 255, 0.6)'
-          }}>
-            ⏰ Upcoming Events
-          </h2>
-          {loading ? (
-            <div style={{ color: '#ccc' }}>Loading...</div>
+      {/* Participation History Section */}
+      <div className="disco-card" style={{
+        padding: '1.5rem',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        <h2 style={{
+          fontSize: '1.5rem',
+          marginBottom: '1.5rem',
+          color: '#ff00ff',
+          fontFamily: "'Bungee', cursive"
+        }}>
+          📋 Participation History
+        </h2>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: '0.6rem 1.2rem',
+                borderRadius: '20px',
+                border: activeTab === tab.key ? `2px solid ${tab.color}` : '2px solid transparent',
+                background: activeTab === tab.key ? `${tab.color}22` : 'rgba(255,255,255,0.05)',
+                color: activeTab === tab.key ? tab.color : '#888',
+                cursor: 'pointer',
+                fontFamily: "'Anton', sans-serif",
+                fontSize: '0.9rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              {tab.label} ({summary?.[tab.key === 'cancelled' ? 'cancelledRejected' : tab.key]?.length || 0})
+            </button>
+          ))}
+        </div>
+
+        {/* Event Records Table */}
+        <div style={{ overflowX: 'auto' }}>
+          {getTabData().length > 0 ? (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid rgba(255,255,255,0.1)' }}>
+                  <th style={{ padding: '0.8rem', textAlign: 'left', color: '#00ffff', fontFamily: "'Anton', sans-serif" }}>Event Name</th>
+                  <th style={{ padding: '0.8rem', textAlign: 'left', color: '#00ffff', fontFamily: "'Anton', sans-serif" }}>Type</th>
+                  <th style={{ padding: '0.8rem', textAlign: 'left', color: '#00ffff', fontFamily: "'Anton', sans-serif" }}>Organizer</th>
+                  <th style={{ padding: '0.8rem', textAlign: 'left', color: '#00ffff', fontFamily: "'Anton', sans-serif" }}>Status</th>
+                  <th style={{ padding: '0.8rem', textAlign: 'left', color: '#00ffff', fontFamily: "'Anton', sans-serif" }}>Team</th>
+                  <th style={{ padding: '0.8rem', textAlign: 'left', color: '#00ffff', fontFamily: "'Anton', sans-serif" }}>Ticket ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getTabData().map((reg) => (
+                  <tr key={reg._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <td style={{ padding: '0.8rem', color: '#fff' }}>{reg.event?.eventName || '-'}</td>
+                    <td style={{ padding: '0.8rem', color: '#ccc' }}>{reg.event?.eventType || '-'}</td>
+                    <td style={{ padding: '0.8rem', color: '#ccc' }}>{reg.event?.organizer?.organizerName || '-'}</td>
+                    <td style={{ padding: '0.8rem' }}>{getStatusBadge(reg)}</td>
+                    <td style={{ padding: '0.8rem', color: '#ccc' }}>{reg.teamName || '-'}</td>
+                    <td style={{ padding: '0.8rem' }}>
+                      {reg.ticket?.ticketId ? (
+                        <span 
+                          style={{ 
+                            color: '#ffff00', 
+                            cursor: 'pointer', 
+                            textDecoration: 'underline' 
+                          }}
+                          onClick={() => navigate('/tickets')}
+                          title="Click to view ticket"
+                        >
+                          {reg.ticket.ticketId}
+                        </span>
+                      ) : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
-              {(summary?.upcoming || []).slice(0, 6).map(item => (
-                <div key={item._id} className="event-card-disco" style={{ padding: '1rem' }}>
-                  <div style={{ fontFamily: "'Bungee', cursive", color: '#ffff00' }}>{item.event?.eventName}</div>
-                  <div style={{ color: '#00ffff', fontFamily: "'Anton', sans-serif" }}>{item.event?.eventType} • {item.event?.organizer?.organizerName || 'Organizer'}</div>
-                  <div style={{ color: '#fff', fontSize: '0.9rem' }}>{new Date(item.event?.eventStartDate).toLocaleString()}</div>
-                </div>
-              ))}
-              {(summary?.upcoming || []).length === 0 && (
-                <div style={{ color: '#ccc' }}>No upcoming events yet</div>
-              )}
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+              <p>No records in this category.</p>
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-            <button className="disco-button" onClick={() => navigate('/tickets')}>View Tickets</button>
-          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

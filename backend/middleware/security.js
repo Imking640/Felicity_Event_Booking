@@ -65,6 +65,8 @@ const validateEmail = (participantType) => {
 
 // Store verification codes (in production, use Redis or database)
 const verificationCodes = new Map();
+// Store password change OTPs
+const passwordChangeOTPs = new Map();
 
 // Clean up expired codes every 10 minutes
 setInterval(() => {
@@ -397,6 +399,128 @@ const resetFailedLogin = (ip, email) => {
   failedLoginAttempts.delete(identifier);
 };
 
+// Send OTP for password change
+const sendPasswordChangeOTP = async (userId, email) => {
+  try {
+    if (!process.env.BREVO_API_KEY) {
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    // Generate OTP
+    const otp = generateVerificationCode();
+    
+    // Store OTP with user ID
+    passwordChangeOTPs.set(userId.toString(), {
+      otp,
+      createdAt: Date.now(),
+      attempts: 0,
+      verified: false
+    });
+
+    // Send via Brevo API
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: {
+        name: 'Felicity Events',
+        email: process.env.EMAIL_FROM || 'noreply@felicity.com'
+      },
+      to: [{ email: email }],
+      subject: '🔐 Password Change Verification - Felicity Events',
+      htmlContent: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; }
+            .container { max-width: 500px; margin: 0 auto; padding: 30px; }
+            .header { background: linear-gradient(135deg, #ff006e 0%, #ff9500 100%); 
+                     padding: 20px; text-align: center; border-radius: 15px 15px 0 0; }
+            .content { background: #16213e; padding: 30px; border-radius: 0 0 15px 15px; }
+            .code-box { background: #0f3460; padding: 20px; margin: 20px 0; 
+                       border: 2px solid #ff006e; border-radius: 10px; text-align: center; }
+            .code { font-size: 36px; font-weight: bold; color: #ff006e; letter-spacing: 8px; }
+            .warning { color: #ffff00; font-size: 14px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Password Change Request</h1>
+            </div>
+            <div class="content">
+              <p>You requested to change your password. Use this OTP to verify:</p>
+              <div class="code-box">
+                <div class="code">${otp}</div>
+              </div>
+              <p>This code will expire in <strong>10 minutes</strong>.</p>
+              <p class="warning">⚠️ If you didn't request this, please ignore this email and secure your account.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    }, {
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      timeout: 30000
+    });
+
+    console.log(`✅ Password change OTP sent to ${email}`);
+    return { success: true, message: 'OTP sent to your email' };
+
+  } catch (error) {
+    console.error('❌ Password change OTP error:', error.response?.data || error.message);
+    return { success: false, message: 'Failed to send OTP' };
+  }
+};
+
+// Verify password change OTP
+const verifyPasswordChangeOTP = (userId, otp) => {
+  const stored = passwordChangeOTPs.get(userId.toString());
+  
+  if (!stored) {
+    return { valid: false, message: 'No OTP found. Please request a new one.' };
+  }
+  
+  // Check expiry (10 minutes)
+  if (Date.now() - stored.createdAt > 10 * 60 * 1000) {
+    passwordChangeOTPs.delete(userId.toString());
+    return { valid: false, message: 'OTP has expired. Please request a new one.' };
+  }
+  
+  // Check attempts (max 3)
+  if (stored.attempts >= 3) {
+    passwordChangeOTPs.delete(userId.toString());
+    return { valid: false, message: 'Too many failed attempts. Please request a new OTP.' };
+  }
+  
+  // Verify OTP
+  if (stored.otp !== otp) {
+    stored.attempts++;
+    passwordChangeOTPs.set(userId.toString(), stored);
+    return { valid: false, message: `Invalid OTP. ${3 - stored.attempts} attempts remaining.` };
+  }
+  
+  // Mark as verified
+  stored.verified = true;
+  passwordChangeOTPs.set(userId.toString(), stored);
+  
+  return { valid: true, message: 'OTP verified successfully' };
+};
+
+// Check if OTP is verified for password change
+const isPasswordOTPVerified = (userId) => {
+  const stored = passwordChangeOTPs.get(userId.toString());
+  return stored?.verified === true;
+};
+
+// Clear password change OTP after use
+const clearPasswordChangeOTP = (userId) => {
+  passwordChangeOTPs.delete(userId.toString());
+};
+
 module.exports = {
   loginLimiter,
   registerLimiter,
@@ -409,5 +533,9 @@ module.exports = {
   recordFailedLogin,
   resetFailedLogin,
   sendVerificationEmail,
-  verifyEmailCode
+  verifyEmailCode,
+  sendPasswordChangeOTP,
+  verifyPasswordChangeOTP,
+  isPasswordOTPVerified,
+  clearPasswordChangeOTP
 };

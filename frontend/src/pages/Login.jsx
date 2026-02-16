@@ -33,7 +33,20 @@ const Login = () => {
     
     if (result.success) {
       showDiscoToast('🎉 Welcome back! Let\'s boogie!', true);
-      setTimeout(() => navigate('/dashboard'), 500);
+      
+      // Get user from localStorage to determine redirect
+      const savedUser = JSON.parse(localStorage.getItem('user'));
+      let redirectPath = '/dashboard';
+      
+      if (savedUser?.role === 'admin') {
+        redirectPath = '/admin';
+      } else if (savedUser?.role === 'organizer') {
+        redirectPath = '/organizer/dashboard';
+      } else {
+        redirectPath = '/dashboard'; // Participant dashboard
+      }
+      
+      setTimeout(() => navigate(redirectPath), 500);
     } else {
       showDiscoToast('⚠️ ' + result.message, false);
       // Reset reCAPTCHA on failed attempt

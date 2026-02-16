@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
+import EditProfile from './pages/EditProfile';
 import Events from './pages/Events';
 import EventRegistration from './pages/EventRegistration';
 import DashboardRouter from './pages/DashboardRouter';
@@ -49,6 +50,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile/edit" 
+              element={
+                <ProtectedRoute>
+                  <EditProfile />
                 </ProtectedRoute>
               } 
             />

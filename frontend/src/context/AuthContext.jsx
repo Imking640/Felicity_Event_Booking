@@ -74,10 +74,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function - clears all authentication tokens
   const logout = () => {
+    // Clear all auth-related data from localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // Clear any other potential auth data
+    localStorage.removeItem('refreshToken');
+    sessionStorage.clear();
+    
+    // Clear state
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
