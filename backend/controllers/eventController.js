@@ -19,18 +19,20 @@ exports.getEvents = async (req, res) => {
       startDate,   // Filter by start date range
       endDate,
       scope,       // 'followed' to show only followed clubs for participants
-      sortBy = (req.user && req.user.role === 'participant') ? 'relevance' : 'eventStartDate',
+      sortBy = 'eventStartDate',
       order = 'asc',
       page = 1,
       limit = 20
     } = req.query;
+    
+    console.log('🔍 Events filter params:', { type, eligibility, search, startDate, endDate, scope, user: req.user?.id });
     
     // Build query
     const query = {};
     
     // Apply filters
     if (type) query.eventType = type;
-    if (eligibility) query.eligibility = eligibility;
+    if (eligibility && eligibility !== 'All') query.eligibility = eligibility;
     if (status) {
       query.status = status;
     } else {
@@ -42,133 +44,96 @@ exports.getEvents = async (req, res) => {
     if (organizer) query.organizer = organizer;
     if (tags) query.tags = { $in: tags.split(',') };
     
-    // Date range filter
-    if (startDate || endDate) {
-      query.eventStartDate = {};
-      if (startDate) query.eventStartDate.$gte = new Date(startDate);
-      if (endDate) query.eventStartDate.$lte = new Date(endDate);
+    // Date range filter - filter events that START within the range
+    if (startDate) {
+      query.eventStartDate = query.eventStartDate || {};
+      query.eventStartDate.$gte = new Date(startDate);
+    }
+    if (endDate) {
+      query.eventStartDate = query.eventStartDate || {};
+      // Add a day to include the entire end date
+      const endDateObj = new Date(endDate);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      query.eventStartDate.$lte = endDateObj;
     }
     
-    // NOTE: For fuzzy search we won't filter at DB level; we'll score after fetch
-    const useDbSearch = !search; // if search provided, do fuzzy scoring client-side
-    
-    // Pagination
-    const skip = (page - 1) * limit;
-    
-    // Always get with basic sort by date for stable ordering before relevance tweaks
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const baseSort = { eventStartDate: sortOrder };
-
-    // Execute base query
-    let eventsQuery = Event.find(query)
-      .populate('organizer', 'organizerName email category')
-      .sort(baseSort);
-
-    // Scope: followed clubs only (participants)
-    if (scope === 'followed' && req.user && req.user.role === 'participant') {
+    // Handle "followed clubs only" scope
+    if (scope === 'followed') {
+      if (!req.user || req.user.role !== 'participant') {
+        // Not logged in or not a participant - return empty for followed filter
+        console.log('⚠️ Followed scope requested but no participant user');
+        return res.json({ success: true, count: 0, total: 0, page: parseInt(page), pages: 0, events: [] });
+      }
+      
       try {
         const { Participant } = require('../models/User');
         const me = await Participant.findById(req.user.id).select('followedClubs');
-        const followedIds = (me?.followedClubs || []).map(id => String(id));
-        if (followedIds.length) {
-          eventsQuery = eventsQuery.where('organizer').in(followedIds);
-        } else {
+        const followedIds = (me?.followedClubs || []).map(id => id.toString());
+        console.log('👤 User followed clubs:', followedIds);
+        
+        if (followedIds.length === 0) {
           // No followed clubs => empty result
+          console.log('📭 No followed clubs, returning empty');
           return res.json({ success: true, count: 0, total: 0, page: parseInt(page), pages: 0, events: [] });
         }
+        
+        // Add organizer filter to query
+        query.organizer = { $in: followedIds };
       } catch (e) {
         console.error('Followed scope error:', e);
+        return res.json({ success: true, count: 0, total: 0, page: parseInt(page), pages: 0, events: [] });
       }
     }
-
-    let events = await eventsQuery
+    
+    console.log('📋 Final query:', JSON.stringify(query));
+    
+    // Pagination
+    const skip = (page - 1) * limit;
+    const sortOrder = order === 'desc' ? -1 : 1;
+    const baseSort = { eventStartDate: sortOrder };
+    
+    // Get total count for pagination (before search filtering)
+    let total = await Event.countDocuments(query);
+    
+    // Fetch events
+    let events = await Event.find(query)
+      .populate('organizer', 'organizerName email category')
+      .sort(baseSort)
       .skip(skip)
       .limit(parseInt(limit));
     
-    // Get total count for pagination
-  const total = await Event.countDocuments(query);
-
-    // Fuzzy search scoring when search is provided
-    if (search) {
-      const sQuery = String(search).toLowerCase();
-      // Fetch a broader set to score correctly
+    // Apply search filter (fuzzy matching with minimum threshold)
+    if (search && search.trim()) {
+      const searchQuery = search.trim().toLowerCase();
+      console.log('🔎 Applying search filter:', searchQuery);
+      
+      // Fetch ALL events matching base query for search filtering
       const allEvents = await Event.find(query)
         .populate('organizer', 'organizerName email category')
         .sort(baseSort);
-
-      // Simple normalized Levenshtein-based score
-      const levenshtein = (a, b) => {
-        const m = a.length, n = b.length;
-        const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-        for (let i = 0; i <= m; i++) dp[i][0] = i;
-        for (let j = 0; j <= n; j++) dp[0][j] = j;
-        for (let i = 1; i <= m; i++) {
-          for (let j = 1; j <= n; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            dp[i][j] = Math.min(
-              dp[i - 1][j] + 1,     // deletion
-              dp[i][j - 1] + 1,     // insertion
-              dp[i - 1][j - 1] + cost // substitution
-            );
-          }
-        }
-        return dp[m][n];
-      };
-      const normalizeScore = (dist, len) => 1 - Math.min(1, dist / Math.max(1, len));
-
-      const scored = allEvents.map(ev => {
-        const name = String(ev.eventName || '').toLowerCase();
-        const org = String(ev.organizer?.organizerName || '').toLowerCase();
-        const dName = levenshtein(sQuery, name);
-        const dOrg = levenshtein(sQuery, org);
-        // Exact/partial hits boost
-        let score = Math.max(normalizeScore(dName, name.length), normalizeScore(dOrg, org.length));
-        if (name.includes(sQuery)) score += 0.5;
-        if (org.includes(sQuery)) score += 0.5;
-        return { ev, score };
+      
+      // Filter events that match the search
+      const filteredEvents = allEvents.filter(ev => {
+        const name = (ev.eventName || '').toLowerCase();
+        const desc = (ev.eventDescription || '').toLowerCase();
+        const org = (ev.organizer?.organizerName || '').toLowerCase();
+        const tagsStr = (ev.tags || []).join(' ').toLowerCase();
+        
+        // Check if search query is contained in any field
+        return name.includes(searchQuery) || 
+               desc.includes(searchQuery) || 
+               org.includes(searchQuery) ||
+               tagsStr.includes(searchQuery);
       });
-
-      scored.sort((a, b) => b.score - a.score || new Date(a.ev.eventStartDate) - new Date(b.ev.eventStartDate));
-      const start = (page - 1) * limit;
-      events = scored.slice(start, start + parseInt(limit)).map(s => s.ev);
+      
+      console.log(`🔍 Search results: ${filteredEvents.length} of ${allEvents.length} events match`);
+      
+      // Update total and apply pagination
+      total = filteredEvents.length;
+      events = filteredEvents.slice(skip, skip + parseInt(limit));
     }
-
-    // Relevance sorting for participants based on interests & followed clubs
-    if (sortBy === 'relevance' && req.user && req.user.role === 'participant') {
-      try {
-        const { Participant } = require('../models/User');
-        const me = await Participant.findById(req.user.id).select('interests followedClubs');
-        if (me) {
-          const interests = new Set((me.interests || []).map(s => s.toLowerCase()));
-          const followed = new Set((me.followedClubs || []).map(id => String(id)));
-          // Re-fetch without pagination to score correctly, then paginate post-sort
-          const allEvents = await Event.find(query)
-            .populate('organizer', 'organizerName email category')
-            .sort(baseSort);
-
-          const scored = allEvents.map(ev => {
-            let score = 0;
-            // tag matches
-            if (Array.isArray(ev.tags) && interests.size) {
-              const hits = ev.tags.filter(t => interests.has(String(t).toLowerCase())).length;
-              score += hits * 2;
-            }
-            // organizer followed
-            if (ev.organizer && followed.has(String(ev.organizer._id))) {
-              score += 5;
-            }
-            return { ev, score };
-          });
-
-          scored.sort((a, b) => b.score - a.score || new Date(a.ev.eventStartDate) - new Date(b.ev.eventStartDate));
-          // apply pagination after relevance sort
-          const start = (page - 1) * limit;
-          events = scored.slice(start, start + parseInt(limit)).map(s => s.ev);
-        }
-      } catch (relevanceErr) {
-        console.error('Relevance sort error:', relevanceErr);
-      }
-    }
+    
+    console.log(`✅ Returning ${events.length} events`);
 
     res.json({
       success: true,
