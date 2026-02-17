@@ -1,355 +1,156 @@
-# Felicity Event Management System# Felicity Event Management System
-
-
-
-> A full-stack event management platform built for IIIT Hyderabad's Felicity fest using the MERN stack.**Full-Stack Event Management Platform** ✅
-
-
-
-## 🌐 Live Deployment## 🌐 Live Deployment
-
-
-
-| Component | URL |- **Frontend:** https://felicity-event-booking.vercel.app
-
-|-----------|-----|- **Backend API:** https://felicity-event-booking.onrender.com/api
-
-| **Frontend** | https://felicity-event-booking.vercel.app |- **Database:** MongoDB Atlas
-
-| **Backend API** | https://felicity-event-booking.onrender.com/api |
-
-| **Database** | MongoDB Atlas |## 📖 Complete Development Guide
-
-
-
----👉 **Read `DEVELOPMENT_LOG.md`** for every command and explanation!
-
-
-
-## 📋 Assignment Requirements & Implementation## 🎯 Features
-
-
-
-### Part 1: Core System Implementation [70 Marks]### User Roles
-
-- **Participant** - Browse events, register, view tickets
-
-#### Authentication & Security [8 Marks] ✅- **Organizer** - Create/manage events, track registrations, scan QR attendance
-
-- **Admin** - Manage organizers, approve payments, system oversight
-
-| Requirement | Implementation |
-
-|-------------|----------------|### Core Features
-
-| **IIIT Participant Registration** | Email domain validation (`@*.iiit.ac.in`) enforced |- JWT-based authentication with role-based access
-
-| **Non-IIIT Registration** | Email + password with email verification (OTP via Brevo) |- Event creation with custom registration forms
-
-| **Organizer Authentication** | Admin-provisioned accounts, no self-registration |- QR code ticket generation
-
-| **Admin Provisioning** | Backend-only account creation via script |- Email notifications (registration, tickets)
-
-| **Password Hashing** | bcrypt with salt rounds |- Payment approval workflow
-
-| **JWT Authentication** | All protected routes use JWT tokens |- Attendance tracking via QR scanner
-
-| **Role-Based Access Control** | Middleware checks for participant/organizer/admin |
-
-| **Session Management** | Persistent sessions, proper logout with token clearing |### Advanced Features
-
-- Merchandise events with variants (size, color)
-
-#### User Onboarding & Preferences [3 Marks] ✅- Toggle registration open/close
-
-- Export attendance to CSV
-
-- Post-signup onboarding flow for participants- Search and filter events
-
-- Areas of interest selection (multiple)- Eligibility restrictions (IIIT/Non-IIIT)
-
-- Follow clubs/organizers functionality- Discord auto-posting for events
-
-- Preferences stored in database and editable from Profile
-
-- Event recommendations based on followed organizers## 🚀 Quick Start
-
-
-
-#### User Data Models [2 Marks] ✅### Prerequisites
-
-- Node.js v18+
-
-**Participant Model:**- MongoDB (local or Atlas)
-
-- First Name, Last Name, Email (unique)
-
-- Participant Type (IIIT/Non-IIIT)### Backend Setup
-
-- College/Organization Name
-
-- Contact Number```bash
-
-- Password (hashed)cd backend
-
-- Interests, Followed Organizersnpm install
-
-cp .env.example .env
-
-**Organizer Model:**# Edit .env with your values
-
-- Organizer Name, Category, Descriptionnpm run dev
-
-- Contact Email, Login Email```
-
-- Discord Webhook URL
-
-- isActive status### Frontend Setup
-
-
-
-#### Event Types [2 Marks] ✅```bash
-
-cd frontend
-
-| Type | Description |npm install
-
-|------|-------------|npm start
-
-| **Normal Event** | Individual participant registration (workshops, talks, competitions) |```
-
-| **Merchandise** | Selling items with variants (size, color), stock management |
-
-## 📁 Project Structure
-
-#### Event Attributes [2 Marks] ✅
-
-```
-
-All events store: Name, Description, Type, Eligibility, Registration Deadline, Start/End Date, Registration Limit, Registration Fee, Organizer ID, Tags, Venue, Image URLFelicity_Event_Booking/
-
-├── backend/
-
-- **Normal Events:** Custom registration form (dynamic form builder)│   ├── controllers/     # Business logic
-
-- **Merchandise:** Item variants (size, color), stock quantity, purchase limits│   ├── middleware/      # Auth & security
-
-│   ├── models/          # Database schemas
-
-#### Participant Features [22 Marks] ✅│   ├── routes/          # API endpoints
-
-│   ├── utils/           # Email, QR, Discord services
-
-| Feature | Marks | Status |│   └── server.js        # Main server
-
-|---------|-------|--------|├── frontend/
-
-| Navigation Menu | 1 | ✅ Dashboard, Browse Events, Clubs, Profile, Logout |│   ├── src/
-
-| My Events Dashboard | 6 | ✅ Upcoming events, participation history with tabs |│   │   ├── components/  # Reusable UI components
-
-| Browse Events Page | 5 | ✅ Search (fuzzy), filters (type, eligibility, date, followed), trending |│   │   ├── context/     # Auth context
-
-| Event Details Page | 2 | ✅ Complete details, registration button with validation |│   │   ├── pages/       # Page components
-
-| Event Registration Workflows | 5 | ✅ Form submission, email tickets, QR generation |│   │   ├── services/    # API service
-
-| Profile Page | 2 | ✅ Editable/non-editable fields, password change |│   │   └── styles/      # Theme styles
-
-| Clubs/Organizers Listing | 1 | ✅ All organizers with follow/unfollow |│   └── public/
-
-| Organizer Detail Page | 1 | ✅ Info, upcoming/past events |├── DEVELOPMENT_LOG.md   # Detailed development history
-
-└── README.md
-
-#### Organizer Features [18 Marks] ✅```
-
-
-
-| Feature | Marks | Status |## 🔌 API Endpoints
-
-|---------|-------|--------|
-
-| Navigation Menu | 1 | ✅ Dashboard, Create Event, Profile, Logout, Ongoing Events |### Authentication
-
-| Organizer Dashboard | 3 | ✅ Events carousel, analytics (registrations, revenue, attendance) || Method | Endpoint | Description |
-
-| Event Detail Page | 4 | ✅ Overview, analytics, participants list, search/filter, CSV export ||--------|----------|-------------|
-
-| Event Creation & Editing | 4 | ✅ Draft → Publish flow, form builder, editing rules || POST | /api/auth/register | Register participant |
-
-| Organizer Profile | 4 | ✅ Editable fields, Discord webhook integration || POST | /api/auth/login | Login |
-
-| GET | /api/auth/me | Get current user |
-
-#### Admin Features [6 Marks] ✅
-
-### Events
-
-| Feature | Marks | Status || Method | Endpoint | Description |
-
-|---------|-------|--------||--------|----------|-------------|
-
-| Navigation Menu | 1 | ✅ Dashboard, Manage Organizers, Password Requests, Logout || GET | /api/events | List all events |
-
-| Club/Organizer Management | 5 | ✅ Add new (auto-generate credentials), remove/disable, view all || POST | /api/events | Create event (organizer) |
-
-| GET | /api/events/:id | Get event details |
-
-#### Deployment [5 Marks] ✅| POST | /api/events/:id/toggle-registration | Toggle registration |
-
-
-
-- Frontend deployed to Vercel (static hosting)### Registrations
-
-- Backend deployed to Render (Node.js hosting)| Method | Endpoint | Description |
-
-- MongoDB Atlas for database|--------|----------|-------------|
-
-- `deployment.txt` with production URLs| POST | /api/registrations | Register for event |
-
-| GET | /api/registrations/my-tickets | Get user tickets |
-
----| GET | /api/registrations/:eventId/export | Export CSV |
-
-
-
-### Part 2: Advanced Features [30 Marks]### Admin
-
-| Method | Endpoint | Description |
-
-#### Tier A: Core Advanced Features [Choose 2 — 16 Marks] ✅|--------|----------|-------------|
-
-| GET | /api/admin/organizers | List organizers |
-
-| # | Feature | Marks | Implemented || POST | /api/admin/organizers | Create organizer |
-
-|---|---------|-------|-------------|| GET | /api/admin/payments | List pending payments |
-
-| 1 | Hackathon Team Registration | 8 | ❌ |
-
-| 2 | **Merchandise Payment Approval Workflow** | 8 | ✅ |## 📦 Tech Stack
-
-| 3 | **QR Scanner & Attendance Tracking** | 8 | ✅ |
-
-**Backend:**
-
-**Merchandise Payment Approval Workflow (8 Marks):**- Node.js + Express.js
-
-- Users upload payment proof (image) after placing order- MongoDB + Mongoose
-
-- Order enters "Pending Approval" state- JWT Authentication
-
-- Organizers see dedicated Payment Approvals tab- Brevo (Email API)
-
-- View uploaded proofs with approve/reject actions- QRCode generation
-
-- On approval: stock decremented, QR ticket generated, confirmation email sent
-
-- No QR generated for pending/rejected orders**Frontend:**
-
-- React 18
-
-**QR Scanner & Attendance Tracking (8 Marks):**- React Router
-
-- Built-in QR scanner using device camera (html5-qrcode library)- Context API
-
-- File upload option for QR images- Disco theme UI
-
-- Real-time attendance marking with timestamp
-
-- Duplicate scan detection and rejection## 🔧 Environment Variables
-
-- Live attendance dashboard (Present/Absent counts)
-
-- Export attendance reports as CSV### Backend (.env)
-
-- Manual attendance override with audit logging```
-
-MONGODB_URI=your_mongodb_uri
-
-#### Tier B: Real-time & Communication Features [Choose 2 — 12 Marks] ✅JWT_SECRET=your_jwt_secret
-
-BREVO_API_KEY=your_brevo_api_key
-
-| # | Feature | Marks | Implemented |EMAIL_FROM=your_email
-
-|---|---------|-------|-------------|FRONTEND_URL=your_frontend_url
-
-| 1 | **Real-Time Discussion Forum** | 6 | ✅ |DISCORD_WEBHOOK_URL=your_discord_webhook
-
-| 2 | **Organizer Password Reset Workflow** | 6 | ✅ |```
-
-| 3 | Team Chat | 6 | ❌ (requires Team Registration) |
-
-### Frontend (.env)
-
-**Real-Time Discussion Forum (6 Marks):**```
-
-- Discussion forum on Event Details pageREACT_APP_API_URL=https://felicity-event-booking.vercel.app/
-
-- Registered participants can post messages and questions```
-- Organizers can moderate (delete/pin messages)
-- Organizers can post announcements
-- Message threading support
-- Emoji reactions on messages
-
-**Organizer Password Reset Workflow (6 Marks):**
-- Organizers can request password reset from login page
-- Admin views all requests with details (club name, date, reason)
-- Admin can approve/reject with comments
-- Auto-generates new password on approval
-- Admin receives credentials to share with organizer
-- Request status tracking (Pending/Approved/Rejected)
-
-#### Tier C: Integration & Enhancement Features [Choose 1 — 2 Marks] ✅
-
-| # | Feature | Marks | Implemented |
-|---|---------|-------|-------------|
-| 1 | Anonymous Feedback System | 2 | ❌ |
-| 2 | Add to Calendar Integration | 2 | ❌ |
-| 3 | **Bot Protection** | 2 | ✅ |
-
-**Bot Protection (2 Marks):**
+# Felicity Event Management System
+
+A full-stack event management platform built with the MERN stack for managing events, registrations, and participants at IIIT Hyderabad's Felicity fest.
+
+## Live Application
+
+Frontend: https://felicity-event-booking.vercel.app
+Backend: https://felicity-event-booking.onrender.com/api
+Database: MongoDB Atlas
+
+## About This Project
+
+This system was built to centralize event management for Felicity fest, replacing the chaos of Google Forms, spreadsheets, and WhatsApp groups. It allows clubs and organizers to create events, participants to register and track their participation, and admins to manage the entire system.
+
+## What I Built
+
+### Core Features (Part 1 - 70 Marks)
+
+I implemented all the required core features:
+
+**Authentication & Security (8 marks)**
+- IIIT students can register with their college email (domain validation for @*.iiit.ac.in)
+- External participants register with email verification using OTP
+- Organizers get accounts created by admin with auto-generated credentials
+- Admin account is provisioned via backend script
+- All passwords are hashed with bcrypt
+- JWT-based authentication for all protected routes
+- Role-based access control throughout the application
+- Sessions persist across browser restarts
+
+**User Onboarding (3 marks)**
+- After signup, participants can select their interests and follow organizers
+- These preferences can be set during onboarding or skipped and configured later
+- Preferences are stored and editable from the profile page
+- They influence event recommendations and ordering
+
+**User Models (2 marks)**
+Created comprehensive models for Participants and Organizers with all required fields plus additional ones like interests, followed organizers, Discord webhooks, etc.
+
+**Event Types (2 marks)**
+- Normal Events: For workshops, talks, competitions with individual registration
+- Merchandise Events: For selling items with variants like size and color
+
+**Event Attributes (2 marks)**
+All events have name, description, type, eligibility, dates, registration limits, fees, tags, and venue. Normal events have custom registration forms with a dynamic form builder. Merchandise events have item variants, stock tracking, and purchase limits.
+
+**Participant Features (22 marks)**
+- Navigation with Dashboard, Browse Events, Clubs, Profile, Logout
+- Dashboard showing upcoming events and participation history organized by tabs
+- Browse events page with search, trending section, and filters for type, eligibility, date range, and followed clubs
+- Event details page with complete information and registration button with proper validation
+- Registration workflow that sends tickets via email with QR codes
+- Profile page with editable fields and password change
+- Clubs listing page with follow/unfollow functionality
+- Individual organizer pages showing their upcoming and past events
+
+**Organizer Features (18 marks)**
+- Navigation with Dashboard, Create Event, Profile, Ongoing Events, Logout
+- Dashboard with events carousel and analytics for registrations, revenue, and attendance
+- Event detail page showing overview, analytics, participant list with search/filter, and CSV export
+- Event creation flow with Draft to Published status, dynamic form builder, and editing rules based on event status
+- Profile page with Discord webhook integration for auto-posting new events
+
+**Admin Features (6 marks)**
+- Navigation with Dashboard, Manage Organizers, Password Requests, Logout
+- Create new organizer accounts with auto-generated credentials
+- Disable or remove organizer accounts
+- View all organizers and their status
+
+**Deployment (5 marks)**
+- Frontend deployed on Vercel
+- Backend deployed on Render
+- MongoDB Atlas for database
+- All production URLs documented in deployment.txt
+
+### Advanced Features (Part 2 - 30 Marks)
+
+I chose and implemented features from all three tiers to get exactly 30 marks:
+
+**From Tier A (chose 2 out of 3) - 16 marks**
+
+1. Merchandise Payment Approval Workflow (8 marks)
+   - When participants buy merchandise, they upload payment proof
+   - Order goes into "Pending Approval" state
+   - Organizers see a Payment Approvals tab with all pending orders
+   - They can view the uploaded payment proof and approve or reject
+   - On approval: stock decreases, QR ticket is generated, confirmation email is sent
+   - Rejected or pending orders don't get QR codes
+
+2. QR Scanner & Attendance Tracking (8 marks)
+   - Built-in QR scanner using device camera (html5-qrcode library)
+   - Option to upload QR image instead of scanning
+   - Marks attendance with timestamp when QR is scanned
+   - Prevents duplicate scans
+   - Live dashboard showing who's present and who's absent
+   - Export attendance to CSV
+   - Manual override option for exceptional cases with audit logs
+
+**From Tier B (chose 2 out of 3) - 12 marks**
+
+1. Real-Time Discussion Forum (6 marks)
+   - Discussion forum on every event details page
+   - Registered participants can post messages and ask questions
+   - Organizers can moderate by deleting or pinning messages
+   - Organizers can post announcements
+   - Supports message threading and emoji reactions
+
+2. Organizer Password Reset Workflow (6 marks)
+   - Organizers can request password reset from the login page
+   - Admin sees all requests with club name, date, and reason
+   - Admin can approve or reject with comments
+   - On approval, system generates a new password automatically
+   - Admin gets the new credentials to share with the organizer
+   - Full tracking of request status (Pending/Approved/Rejected)
+
+**From Tier C (chose 1 out of 3) - 2 marks**
+
+Bot Protection (2 marks)
 - Google reCAPTCHA v2 on login and registration pages
-- Rate limiting for failed authentication attempts
-- Security middleware for IP-based request tracking
-- Admin security dashboard showing blocked attempts and suspicious activity
+- Rate limiting for failed login attempts
+- Security middleware tracking suspicious activity
+- Admin dashboard showing security events and blocked attempts
 
----
+## Technology Stack
 
-### Advanced Features Summary
+Backend:
+- Node.js with Express.js for the REST API
+- MongoDB with Mongoose for database
+- JWT for authentication
+- bcrypt for password hashing
+- Multer for file uploads (payment proofs, images)
+- Brevo API for sending emails
+- qrcode library for generating QR codes
 
-| Tier | Required | Implemented | Marks |
-|------|----------|-------------|-------|
-| **Tier A** | 2 features | Merchandise Payment + QR Scanner | 16/16 |
-| **Tier B** | 2 features | Discussion Forum + Password Reset | 12/12 |
-| **Tier C** | 1 feature | Bot Protection | 2/2 |
-| **Total** | 5 features | 5 features | **30/30** |
+Frontend:
+- React 18
+- React Router for navigation
+- Context API for state management
+- html5-qrcode for QR scanning
+- Custom disco theme styling
 
----
+Security:
+- Google reCAPTCHA v2
+- Rate limiting middleware
+- JWT token verification
+- Role-based access control
 
-## 🛠️ Technology Stack
+Deployment:
+- Frontend on Vercel
+- Backend on Render
+- Database on MongoDB Atlas
 
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | React 18, React Router, Context API |
-| **Backend** | Node.js, Express.js |
-| **Database** | MongoDB with Mongoose ODM |
-| **Authentication** | JWT (jsonwebtoken), bcryptjs |
-| **Email Service** | Brevo (Sendinblue) HTTP API |
-| **QR Codes** | qrcode (generation), html5-qrcode (scanning) |
-| **File Uploads** | Multer |
-| **Bot Protection** | Google reCAPTCHA v2 |
-| **Deployment** | Vercel (frontend), Render (backend), MongoDB Atlas |
-
----
-
-## 🚀 Local Development Setup
-
-### Prerequisites
-- Node.js v18+
-- MongoDB (local or Atlas connection)
+## How to Run Locally
 
 ### Backend Setup
 
@@ -357,7 +158,7 @@ BREVO_API_KEY=your_brevo_api_key
 cd backend
 npm install
 cp .env.example .env
-# Configure environment variables
+# Edit .env with your MongoDB URI, JWT secret, Brevo API key, etc.
 npm run dev
 ```
 
@@ -366,146 +167,130 @@ npm run dev
 ```bash
 cd frontend
 npm install
+# Edit .env if needed for API URL and reCAPTCHA key
 npm start
 ```
 
 ### Environment Variables
 
-**Backend (.env):**
-```env
-MONGODB_URI=mongodb+srv://...
-JWT_SECRET=your_secret_key
-BREVO_API_KEY=your_brevo_api_key
-EMAIL_FROM=noreply@felicity.com
-FRONTEND_URL=http://localhost:3000
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
-RECAPTCHA_SECRET_KEY=your_recaptcha_secret
-```
+Backend needs:
+- MONGODB_URI
+- JWT_SECRET
+- BREVO_API_KEY
+- EMAIL_FROM
+- FRONTEND_URL
+- DISCORD_WEBHOOK_URL (optional)
+- RECAPTCHA_SECRET_KEY
 
-**Frontend (.env):**
-```env
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_RECAPTCHA_SITE_KEY=your_recaptcha_site_key
-```
+Frontend needs:
+- REACT_APP_API_URL
+- REACT_APP_RECAPTCHA_SITE_KEY
 
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-Felicity_Event_Booking/
-├── backend/
-│   ├── controllers/        # Business logic (auth, events, registrations, admin)
-│   ├── middleware/         # Auth & security middleware
-│   ├── models/             # Mongoose schemas (User, Event, Registration, etc.)
-│   ├── routes/             # API route definitions
-│   ├── utils/              # Email, QR, Discord services
-│   ├── scripts/            # Admin creation script
-│   └── server.js           # Express server entry point
-├── frontend/
-│   ├── src/
-│   │   ├── components/     # Reusable UI (Navbar, ProtectedRoute, DiscussionForum)
-│   │   ├── context/        # AuthContext for state management
-│   │   ├── pages/          # All page components
-│   │   ├── services/       # API service layer
-│   │   └── styles/         # Disco theme CSS
-│   └── public/
-├── DEVELOPMENT_LOG.md      # Detailed development history
-├── deployment.txt          # Production URLs
-└── README.md               # This file
+backend/
+  controllers/    - Business logic for auth, events, registrations, admin
+  middleware/     - Authentication and security middleware
+  models/         - Database schemas (User, Event, Registration, Discussion, etc.)
+  routes/         - API route definitions
+  utils/          - Helper functions (email, QR generation, Discord integration)
+  scripts/        - Admin account creation script
+  server.js       - Main Express app
+
+frontend/
+  src/
+    components/   - Reusable components (Navbar, ProtectedRoute, DiscussionForum)
+    context/      - AuthContext for user state
+    pages/        - All page components
+    services/     - API calling functions
+    styles/       - CSS files
+  public/         - Static assets
 ```
 
----
+## Key Features Explained
 
-## 🔌 API Endpoints
+### For Participants
+- Register with IIIT email or external email with verification
+- Browse and search all events with multiple filters
+- See trending events in the last 24 hours
+- Follow your favorite clubs and organizers
+- Register for events with custom forms
+- Get QR code tickets via email
+- View all your registrations in one place
+- Participate in event discussion forums
+- Buy merchandise with payment approval flow
 
-### Authentication
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| POST | `/api/auth/register` | Public | Register participant |
-| POST | `/api/auth/login` | Public | Login (all roles) |
-| GET | `/api/auth/me` | Protected | Get current user |
-| PUT | `/api/auth/profile` | Protected | Update profile |
-| POST | `/api/auth/send-verification` | Public | Send email OTP |
-| POST | `/api/auth/verify-email` | Public | Verify email OTP |
-
-### Events
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/events` | Public | List events (with search/filter) |
-| POST | `/api/events` | Organizer | Create event |
-| GET | `/api/events/:id` | Public | Get event details |
-| PUT | `/api/events/:id` | Organizer | Update event |
-| POST | `/api/events/:id/toggle-registration` | Organizer | Open/close registration |
-
-### Registrations
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| POST | `/api/registrations` | Participant | Register for event |
-| GET | `/api/registrations/my-tickets` | Participant | Get user's tickets |
-| GET | `/api/registrations/:eventId/participants` | Organizer | Get participants |
-| GET | `/api/registrations/:eventId/export` | Organizer | Export CSV |
-| POST | `/api/registrations/:id/mark-attendance` | Organizer | Mark attendance |
-
-### Admin
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/admin/organizers` | Admin | List all organizers |
-| POST | `/api/admin/organizers` | Admin | Create organizer |
-| DELETE | `/api/admin/organizers/:id` | Admin | Disable organizer |
-| GET | `/api/admin/password-requests` | Admin | View reset requests |
-| PUT | `/api/admin/password-requests/:id` | Admin | Approve/reject request |
-
-### Discussions
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/discussions/:eventId` | Public | Get forum messages |
-| POST | `/api/discussions/:eventId/messages` | Participant | Post message |
-| PUT | `/api/discussions/:eventId/messages/:id` | Author | Edit message |
-| DELETE | `/api/discussions/:eventId/messages/:id` | Author/Organizer | Delete message |
-
----
-
-## 👥 User Roles & Capabilities
-
-### Participant
-- Register/login with IIIT or external email
-- Browse and search events
-- Register for events (Normal/Merchandise)
-- View tickets with QR codes
-- Follow organizers
-- Participate in event discussions
-- Manage profile and preferences
-
-### Organizer
-- Login with admin-provided credentials
-- Create and manage events
-- Build custom registration forms
-- View registrations and analytics
-- Approve/reject merchandise payments
-- Scan QR codes for attendance
-- Export participant data
+### For Organizers
+- Create events with custom registration forms
+- Choose between Normal and Merchandise event types
+- Build dynamic forms with different field types
+- Track registrations and analytics
+- Approve merchandise payment proofs
+- Scan QR codes to mark attendance
+- Export participant data to CSV
 - Moderate discussion forums
-- Configure Discord webhook
+- Auto-post events to Discord
+- Edit events based on their current status
 
-### Admin
-- Manage organizer accounts (create/disable)
-- Handle password reset requests
+### For Admins
+- Create organizer accounts with auto-generated credentials
+- Manage all organizers in the system
+- Handle password reset requests from organizers
 - View system-wide statistics
 - Monitor security events
 
----
+## API Endpoints
 
-## 📝 Development Log
+All endpoints are under /api prefix
 
-For a complete step-by-step development history with explanations, see `DEVELOPMENT_LOG.md`.
+Auth routes (/api/auth):
+- POST /register - Register new participant
+- POST /login - Login for all user types
+- GET /me - Get current user info
+- PUT /profile - Update user profile
+- POST /send-verification - Send email OTP
+- POST /verify-email - Verify email with OTP
 
----
+Event routes (/api/events):
+- GET / - List all events with search and filters
+- POST / - Create new event (organizer only)
+- GET /:id - Get event details
+- PUT /:id - Update event (organizer only)
+- POST /:id/toggle-registration - Open/close registrations
 
-## 📄 License
+Registration routes (/api/registrations):
+- POST / - Register for an event
+- GET /my-tickets - Get user's tickets
+- GET /:eventId/participants - Get event participants (organizer)
+- GET /:eventId/export - Export participants CSV (organizer)
+- POST /:id/mark-attendance - Mark attendance (organizer)
 
-This project was developed as an assignment for the Design & Analysis of Software Systems course at IIIT Hyderabad.
+Admin routes (/api/admin):
+- GET /organizers - List all organizers
+- POST /organizers - Create new organizer
+- DELETE /organizers/:id - Disable organizer
+- GET /password-requests - View reset requests
+- PUT /password-requests/:id - Approve/reject request
 
----
+Discussion routes (/api/discussions):
+- GET /:eventId - Get forum messages
+- POST /:eventId/messages - Post new message
+- PUT /:eventId/messages/:id - Edit message
+- DELETE /:eventId/messages/:id - Delete message
 
-**Submission:** February 2026
+## Development Notes
+
+The entire codebase was built from scratch following the MERN stack architecture. I used MVC pattern for the backend to keep controllers, routes, and models separate. The frontend uses React's Context API for global state management instead of Redux to keep things simpler.
+
+For email functionality, I switched from Nodemailer to Brevo's HTTP API because it's more reliable for transactional emails and doesn't require SMTP configuration.
+
+The QR code system generates unique ticket IDs and encodes participant and event information. The scanner validates these QR codes and prevents duplicate scans.
+
+The discussion forum stores messages with threading support, allowing replies to specific messages. Organizers have moderation powers to keep discussions on track.
+
+For deployment, I chose Vercel for the frontend because it's optimized for React apps, and Render for the backend because it has good Node.js support. MongoDB Atlas provides the cloud database with automatic backups.
+
+## Complete Development History
+
+See DEVELOPMENT_LOG.md for a detailed, step-by-step account of how this project was built, including every command run, every decision made, and explanations of why things were done a certain way.

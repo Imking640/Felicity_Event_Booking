@@ -1,19 +1,7 @@
 # Felicity Event Booking - Deployment URLs
 
-## Frontend (Vercel/Netlify)
-Frontend URL: https://your-frontend-url.vercel.app
+## Frontend (Vercel)
+Frontend URL: https://felicity-event-booking.vercel.app/
 
-## Backend (Render/Railway)
-Backend API URL: https://your-backend-url.onrender.com
-
-## Database
-MongoDB Atlas Cluster: your-cluster.mongodb.net
-
----
-
-# Instructions to update after deployment:
-# 1. Deploy backend first to get the API URL
-# 2. Update frontend environment with the API URL
-# 3. Deploy frontend to get the frontend URL
-# 4. Update backend FRONTEND_URL environment variable with frontend URL
-# 5. Update reCAPTCHA settings in Google console with production domains
+## Backend (Render)
+Backend API URL: https://felicity-event-booking.onrender.com
