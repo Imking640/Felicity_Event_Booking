@@ -954,7 +954,10 @@ exports.exportAttendance = async (req, res) => {
     }
     
     // Check if organizer owns this event
-    if (event.organizer.toString() !== req.user.id && req.user.role !== 'admin') {
+    const organizerId = event.organizer._id ? event.organizer._id.toString() : event.organizer.toString();
+    const userId = req.user._id ? req.user._id.toString() : req.user.id;
+    
+    if (organizerId !== userId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'You can only export attendance for your own events'

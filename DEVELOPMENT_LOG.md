@@ -3489,3 +3489,105 @@ All require `Authorization: Bearer <token>` and admin role.
 *Lines of Code: ~6000+ across frontend & backend*
 *Developer: AI Assistant with human guidance*
 
+
+---
+
+## Session Update: Final Enhancements & Bug Fixes
+
+**Date:** Latest Session
+
+### Overview
+
+Final round of bug fixes and UX improvements to make the system production-ready.
+
+---
+
+### Changes Made
+
+#### 1. Export CSV Authorization Fix
+
+**Problem:** Organizers couldn't export attendance CSV - getting "Not authorized" error.
+
+**Solution:** Fixed the authorization check in `registrationController.js`:
+- Changed to use `String(req.user._id)` consistently for ID comparison
+- Added debug logging to help troubleshoot authorization issues
+
+**File Modified:** `backend/controllers/registrationController.js`
+
+---
+
+#### 2. Toggle Registration Feature
+
+**Problem:** Organizers needed to manually close/open registrations for events.
+
+**Solution:** 
+- Added `registrationClosed` boolean field to Event model
+- Updated `isRegistrationOpen` virtual property to check this flag
+- Created new toggle endpoint: `POST /api/events/:id/toggle-registration`
+- Added toggle button in EventDetailOrganizer page
+
+**Files Modified:**
+- `backend/models/Event.js` - Added registrationClosed field
+- `backend/routes/events.js` - Added toggle registration route
+- `frontend/src/pages/EventDetailOrganizer.jsx` - Added toggle button UI
+
+---
+
+#### 3. Eligibility Display in Event Detail Overview
+
+**Problem:** Eligibility information wasn't visible in the event overview section.
+
+**Solution:** Added eligibility badge with color-coded display:
+- "IIIT Only" - Cyan badge
+- "Non-IIIT Only" - Orange badge
+- "All" - Green badge
+
+**File Modified:** `frontend/src/pages/EventDetailOrganizer.jsx`
+
+---
+
+#### 4. Registration Date Fix
+
+**Problem:** Registration dates showing "Invalid Date" in participant lists.
+
+**Solution:** Changed field reference from `r.registeredAt` to `r.registrationDate` to match the actual database field name.
+
+**File Modified:** `frontend/src/pages/EventDetailOrganizer.jsx`
+
+---
+
+#### 5. Improved Merchandise Event Form
+
+**Problem:** Merchandise events showed irrelevant fields like venue, start/end dates, and max participants.
+
+**Solution:** Updated CreateEvent form with conditional rendering:
+- Hide venue field for Merchandise type
+- Hide event start/end dates for Merchandise (only show Order Deadline)
+- Hide max participants for Merchandise
+- Updated labels: "Registration Fee" -> "Base Price", "Registration Deadline" -> "Order Deadline"
+- Dynamic section titles: "Dates & Timing" -> "Sale Period", "Registration Settings" -> "Order Settings"
+
+**File Modified:** `frontend/src/pages/CreateEvent.jsx`
+
+---
+
+### Technical Summary
+
+| Feature | Backend Changes | Frontend Changes |
+|---------|----------------|------------------|
+| CSV Export Fix | registrationController.js | - |
+| Toggle Registration | Event.js, events.js | EventDetailOrganizer.jsx |
+| Eligibility Display | - | EventDetailOrganizer.jsx |
+| Registration Date Fix | - | EventDetailOrganizer.jsx |
+| Merchandise Form | - | CreateEvent.jsx |
+
+---
+
+**Status:** ALL FEATURES COMPLETE
+**System is now production-ready with all enhancements**
+
+---
+
+*Development Log Updated: February 2026*
+*Total Features: All core + advanced features implemented*
+*Deployment: Backend on Render, Frontend on Vercel, Database on MongoDB Atlas*

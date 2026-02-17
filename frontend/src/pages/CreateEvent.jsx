@@ -219,31 +219,41 @@ const CreateEvent = () => {
                     className="disco-input"
                   >
                     <option value="Normal">Normal Event</option>
-                    <option value="Merchandise">Merchandise</option>
+                    <option value="Merchandise">Merchandise Sale</option>
                   </select>
+                  <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                    {form.eventType === 'Merchandise' 
+                      ? '🛍️ For selling T-shirts, hoodies, etc.' 
+                      : '🎉 For workshops, competitions, etc.'}
+                  </div>
                 </div>
 
-                <div>
-                  <label className="disco-label">📍 Venue *</label>
-                  <input 
-                    name="venue" 
-                    value={form.venue} 
-                    onChange={handleChange} 
-                    placeholder="e.g., Main Auditorium, Online" 
-                    className="disco-input" 
-                    required
-                  />
-                </div>
+                {form.eventType !== 'Merchandise' && (
+                  <div>
+                    <label className="disco-label">📍 Venue *</label>
+                    <input 
+                      name="venue" 
+                      value={form.venue} 
+                      onChange={handleChange} 
+                      placeholder="e.g., Main Auditorium, Online" 
+                      className="disco-input" 
+                      required={form.eventType !== 'Merchandise'}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Merchandise Details - Only show when type is Merchandise */}
           {form.eventType === 'Merchandise' && (
-            <div className="disco-card" style={{ padding: '2rem', marginBottom: '1.5rem' }}>
-              <h3 style={{ color: '#ff6b00', marginBottom: '1.5rem', fontFamily: "'Bungee', cursive" }}>
+            <div className="disco-card" style={{ padding: '2rem', marginBottom: '1.5rem', border: '2px solid #ff6b00' }}>
+              <h3 style={{ color: '#ff6b00', marginBottom: '0.5rem', fontFamily: "'Bungee', cursive" }}>
                 🛍️ Merchandise Details
               </h3>
+              <p style={{ color: '#ccc', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                Set up your product for sale. Add variants like Size (S, M, L) or Color options.
+              </p>
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div>
@@ -372,42 +382,46 @@ const CreateEvent = () => {
           {/* Dates & Timing */}
           <div className="disco-card" style={{ padding: '2rem', marginBottom: '1.5rem' }}>
             <h3 style={{ color: '#00ffff', marginBottom: '1.5rem', fontFamily: "'Bungee', cursive" }}>
-              📅 Dates & Timing
+              {form.eventType === 'Merchandise' ? '📅 Sale Period' : '📅 Dates & Timing'}
             </h3>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              <div>
-                <label className="disco-label">🗓️ Event Start Date *</label>
-                <input 
-                  type="date" 
-                  name="eventStartDate" 
-                  value={form.eventStartDate} 
-                  onChange={handleChange} 
-                  className="disco-input" 
-                  required 
-                />
-                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
-                  When does the event begin?
-                </div>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: form.eventType === 'Merchandise' ? '1fr' : 'repeat(3, 1fr)', gap: '1rem' }}>
+              {form.eventType !== 'Merchandise' && (
+                <>
+                  <div>
+                    <label className="disco-label">🗓️ Event Start Date *</label>
+                    <input 
+                      type="date" 
+                      name="eventStartDate" 
+                      value={form.eventStartDate} 
+                      onChange={handleChange} 
+                      className="disco-input" 
+                      required={form.eventType !== 'Merchandise'}
+                    />
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                      When does the event begin?
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="disco-label">🏁 Event End Date *</label>
+                    <input 
+                      type="date" 
+                      name="eventEndDate" 
+                      value={form.eventEndDate} 
+                      onChange={handleChange} 
+                      className="disco-input" 
+                      required={form.eventType !== 'Merchandise'}
+                    />
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                      When does the event end?
+                    </div>
+                  </div>
+                </>
+              )}
               
               <div>
-                <label className="disco-label">🏁 Event End Date *</label>
-                <input 
-                  type="date" 
-                  name="eventEndDate" 
-                  value={form.eventEndDate} 
-                  onChange={handleChange} 
-                  className="disco-input" 
-                  required 
-                />
-                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
-                  When does the event end?
-                </div>
-              </div>
-              
-              <div>
-                <label className="disco-label">⏰ Registration Deadline *</label>
+                <label className="disco-label">{form.eventType === 'Merchandise' ? '🛒 Order Deadline *' : '⏰ Registration Deadline *'}</label>
                 <input 
                   type="date" 
                   name="registrationDeadline" 
@@ -417,7 +431,7 @@ const CreateEvent = () => {
                   required
                 />
                 <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
-                  Last date to register
+                  {form.eventType === 'Merchandise' ? 'Last date to place orders' : 'Last date to register'}
                 </div>
               </div>
             </div>
@@ -426,27 +440,29 @@ const CreateEvent = () => {
           {/* Registration Settings */}
           <div className="disco-card" style={{ padding: '2rem', marginBottom: '1.5rem' }}>
             <h3 style={{ color: '#ffff00', marginBottom: '1.5rem', fontFamily: "'Bungee', cursive" }}>
-              🎫 Registration Settings
+              {form.eventType === 'Merchandise' ? '🛒 Order Settings' : '🎫 Registration Settings'}
             </h3>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              <div>
-                <label className="disco-label">👥 Max Participants</label>
-                <input 
-                  type="number" 
-                  name="registrationLimit" 
-                  value={form.registrationLimit} 
-                  onChange={handleChange} 
-                  className="disco-input" 
-                  min={1} 
-                />
-                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
-                  Maximum number of registrations
+            <div style={{ display: 'grid', gridTemplateColumns: form.eventType === 'Merchandise' ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '1rem' }}>
+              {form.eventType !== 'Merchandise' && (
+                <div>
+                  <label className="disco-label">👥 Max Participants</label>
+                  <input 
+                    type="number" 
+                    name="registrationLimit" 
+                    value={form.registrationLimit} 
+                    onChange={handleChange} 
+                    className="disco-input" 
+                    min={1} 
+                  />
+                  <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                    Maximum number of registrations
+                  </div>
                 </div>
-              </div>
+              )}
               
               <div>
-                <label className="disco-label">💰 Registration Fee (₹)</label>
+                <label className="disco-label">{form.eventType === 'Merchandise' ? '💰 Base Price (₹)' : '💰 Registration Fee (₹)'}</label>
                 <input 
                   type="number" 
                   name="registrationFee" 
@@ -456,7 +472,7 @@ const CreateEvent = () => {
                   min={0} 
                 />
                 <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
-                  0 for free events
+                  {form.eventType === 'Merchandise' ? 'Base price per item' : '0 for free events'}
                 </div>
               </div>
 
@@ -473,7 +489,7 @@ const CreateEvent = () => {
                   <option value="Non-IIIT Only">Non-IIIT Only</option>
                 </select>
                 <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
-                  Who can register?
+                  {form.eventType === 'Merchandise' ? 'Who can order?' : 'Who can register?'}
                 </div>
               </div>
             </div>

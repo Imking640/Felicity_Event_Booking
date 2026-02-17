@@ -61,6 +61,18 @@ const EventDetailOrganizer = () => {
     }
   };
 
+  const handleToggleRegistration = async () => {
+    try {
+      const res = await api.post(`/events/${id}/toggle-registration`);
+      if (res.data.success) {
+        setEvent({ ...event, registrationClosed: res.data.registrationClosed });
+        showDiscoToast(res.data.message, true);
+      }
+    } catch (err) {
+      showDiscoToast(err.response?.data?.message || 'Failed to toggle registration', false);
+    }
+  };
+
   const handleVerifyPayment = async (registrationId, approve = true) => {
     try {
       const res = await api.post(`/registrations/${registrationId}/verify-payment`, { approved: approve });
@@ -84,7 +96,7 @@ const EventDetailOrganizer = () => {
     const rows = registrations.map(r => [
       `${r.participant?.firstName || ''} ${r.participant?.lastName || ''}`,
       r.participant?.email || '',
-      new Date(r.registeredAt).toLocaleDateString(),
+      r.registrationDate ? new Date(r.registrationDate).toLocaleDateString() : 'N/A',
       r.paymentStatus,
       r.status,
       r.teamName || 'N/A',
@@ -171,6 +183,19 @@ const EventDetailOrganizer = () => {
                   📱 QR Scanner
                 </button>
               )}
+              {event.status === 'published' && (
+                <button 
+                  className="disco-button" 
+                  onClick={handleToggleRegistration}
+                  style={{ 
+                    background: event.registrationClosed 
+                      ? 'linear-gradient(90deg, #00cc00, #00ff00)' 
+                      : 'linear-gradient(90deg, #ff6600, #ff9900)' 
+                  }}
+                >
+                  {event.registrationClosed ? '▶️ Resume Registration' : '⏸️ Close Registration'}
+                </button>
+              )}
               <button className="disco-button" onClick={() => navigate(`/organizer/events/${id}/edit`)}>
                 ✏️ Edit Event
               </button>
@@ -236,6 +261,11 @@ const EventDetailOrganizer = () => {
                 <div>
                   <h4 style={{ color: '#00ffff', marginBottom: '0.5rem' }}>💰 Pricing</h4>
                   <div style={{ color: '#ddd' }}>Fee: ₹{event.registrationFee || 0}</div>
+                </div>
+
+                <div>
+                  <h4 style={{ color: '#00ffff', marginBottom: '0.5rem' }}>🎓 Eligibility</h4>
+                  <div style={{ color: '#ddd' }}>{event.eligibility || 'All'}</div>
                 </div>
 
                 {event.venue && (
@@ -362,7 +392,7 @@ const EventDetailOrganizer = () => {
                       </div>
                       <div style={{ color: '#00ffff', fontSize: '0.9rem' }}>{r.participant?.email}</div>
                       <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#ddd' }}>
-                        Registered: {new Date(r.registeredAt).toLocaleDateString()} • 
+                        Registered: {r.registrationDate ? new Date(r.registrationDate).toLocaleString() : 'N/A'} • 
                         Payment: <span style={{ color: r.paymentStatus === 'paid' ? '#00ff00' : r.paymentStatus === 'pending' ? '#ffff00' : '#ff0000' }}>{r.paymentStatus}</span> • 
                         Status: <span style={{ color: r.status === 'confirmed' ? '#00ff00' : '#ffff00' }}>{r.status}</span>
                         {r.teamName && ` • Team: ${r.teamName}`}

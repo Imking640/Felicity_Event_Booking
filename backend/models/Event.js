@@ -83,6 +83,12 @@ const eventSchema = new mongoose.Schema({
     default: 'draft'
   },
   
+  // Manual registration control
+  registrationClosed: {
+    type: Boolean,
+    default: false
+  },
+  
   // Event Image
   eventImage: {
     type: String,  // URL or path to image
@@ -185,6 +191,7 @@ eventSchema.virtual('isRegistrationOpen').get(function() {
   const now = new Date();
   return (
     this.status === 'published' &&
+    !this.registrationClosed &&
     now <= this.registrationDeadline &&
     (this.registrationLimit === null || this.currentRegistrations < this.registrationLimit) &&
     (this.eventType !== 'Merchandise' || this.merchandiseDetails.stockQuantity > 0)
