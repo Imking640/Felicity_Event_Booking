@@ -4,7 +4,7 @@ import api from '../services/api';
 import DiscoDecorations, { showDiscoToast, createConfetti } from '../components/DiscoDecorations';
 
 const OrganizerProfile = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requestingReset, setRequestingReset] = useState(false);
@@ -44,9 +44,8 @@ const OrganizerProfile = () => {
         createConfetti();
         showDiscoToast('Profile updated successfully!', true);
         
-        // Update local storage
-        const updatedUser = { ...user, ...form };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        // Update user in context
+        updateUser(res.data.user);
         
         setEditing(false);
       }

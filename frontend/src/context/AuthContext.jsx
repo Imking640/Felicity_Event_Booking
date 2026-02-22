@@ -89,6 +89,28 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  // Update user data (after profile edits, follow/unfollow, etc.)
+  const updateUser = (updatedUser) => {
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
+  // Refresh user data from API
+  const refreshUser = async () => {
+    try {
+      const response = await api.get('/auth/me');
+      if (response.data.success) {
+        const freshUser = response.data.user;
+        localStorage.setItem('user', JSON.stringify(freshUser));
+        setUser(freshUser);
+        return { success: true, user: freshUser };
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      return { success: false };
+    }
+  };
+
   const value = {
     user,
     token,
@@ -96,7 +118,9 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
-    logout
+    logout,
+    updateUser,
+    refreshUser
   };
 
   return (

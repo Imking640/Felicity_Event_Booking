@@ -8,7 +8,7 @@ const OrganizersList = () => {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [followedClubs, setFollowedClubs] = useState([]);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateUser } = useAuth();
   const isParticipant = isAuthenticated && user?.role === 'participant';
 
   useEffect(() => {
@@ -31,6 +31,10 @@ const OrganizersList = () => {
       const res = await api.post(`/organizers/${orgId}/follow`);
       if (res.data.success) {
         setFollowedClubs(res.data.followedClubs.map(String));
+        // Update user in context with new followedClubs
+        if (user) {
+          updateUser({ ...user, followedClubs: res.data.followedClubs });
+        }
         showDiscoToast('Followed club!', true);
       }
     } catch (e) {
@@ -43,6 +47,10 @@ const OrganizersList = () => {
       const res = await api.delete(`/organizers/${orgId}/follow`);
       if (res.data.success) {
         setFollowedClubs(res.data.followedClubs.map(String));
+        // Update user in context with new followedClubs
+        if (user) {
+          updateUser({ ...user, followedClubs: res.data.followedClubs });
+        }
         showDiscoToast('Unfollowed club', true);
       }
     } catch (e) {

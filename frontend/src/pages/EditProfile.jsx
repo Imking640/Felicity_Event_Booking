@@ -9,7 +9,7 @@ const DEFAULT_INTERESTS = [
 ];
 
 const EditProfile = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     firstName: '', lastName: '', contactNumber: '', college: ''
@@ -51,7 +51,7 @@ const EditProfile = () => {
         followedClubs: followed
       });
       if (res.data.success) {
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+        updateUser(res.data.user);
         createConfetti();
         showDiscoToast('Profile updated!', true);
         setTimeout(() => navigate('/profile'), 1000);

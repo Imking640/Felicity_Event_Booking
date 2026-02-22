@@ -5,7 +5,7 @@ import api from '../services/api';
 import DiscoDecorations, { showDiscoToast } from '../components/DiscoDecorations';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [organizers, setOrganizers] = useState([]);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -16,6 +16,11 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changing, setChanging] = useState(false);
+
+  // Refresh user data on mount to ensure we have latest info
+  useEffect(() => {
+    refreshUser();
+  }, []);
 
   useEffect(() => {
     const loadOrganizers = async () => {

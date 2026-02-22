@@ -9,7 +9,7 @@ const DEFAULT_INTERESTS = [
 ];
 
 const Onboarding = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateUser } = useAuth();
   const navigate = useNavigate();
   const [organizers, setOrganizers] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
@@ -49,8 +49,7 @@ const Onboarding = () => {
         followedClubs: selectedClubs
       });
       if (res.data.success) {
-        // update local user cache
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+        updateUser(res.data.user);
         createConfetti();
         showDiscoToast('Preferences saved!', true);
         navigate('/dashboard');
