@@ -359,7 +359,6 @@ exports.updateProfile = async (req, res) => {
   try {
     const updates = {};
     
-    // Participant updates
     if (req.user.role === 'participant') {
       const allowedFields = ['firstName', 'lastName', 'contactNumber', 'college', 'interests', 'followedClubs'];
       allowedFields.forEach(field => {
@@ -367,9 +366,20 @@ exports.updateProfile = async (req, res) => {
           updates[field] = req.body[field];
         }
       });
+      
+      const user = await Participant.findByIdAndUpdate(
+        req.user.id,
+        { $set: updates },
+        { new: true, runValidators: true }
+      ).select('-password');
+      
+      return res.json({
+        success: true,
+        message: 'Profile updated successfully',
+        user
+      });
     }
     
-    // Organizer updates
     if (req.user.role === 'organizer') {
       const allowedFields = ['organizerName', 'category', 'description', 'contactEmail', 'contactNumber', 'discordWebhook'];
       allowedFields.forEach(field => {
@@ -377,12 +387,23 @@ exports.updateProfile = async (req, res) => {
           updates[field] = req.body[field];
         }
       });
+      
+      const user = await Organizer.findByIdAndUpdate(
+        req.user.id,
+        { $set: updates },
+        { new: true, runValidators: true }
+      ).select('-password');
+      
+      return res.json({
+        success: true,
+        message: 'Profile updated successfully',
+        user
+      });
     }
     
-    // Update user
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      updates,
+      { $set: updates },
       { new: true, runValidators: true }
     ).select('-password');
     

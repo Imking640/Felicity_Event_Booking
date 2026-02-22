@@ -11,7 +11,6 @@ const ManageOrganizers = () => {
   const [creating, setCreating] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState(null);
   const [form, setForm] = useState({
-    email: '',
     organizerName: '',
     category: 'Technical',
     description: '',
@@ -54,7 +53,6 @@ const ManageOrganizers = () => {
         setCreatedCredentials(res.data.credentials);
         setShowCreateForm(false);
         setForm({
-          email: '',
           organizerName: '',
           category: 'Technical',
           description: '',
@@ -202,20 +200,10 @@ const ManageOrganizers = () => {
               ➕ Create New Organizer
             </h3>
             <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
+              <p style={{ color: '#00ffff', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                📧 Email &amp; password will be auto-generated and shown after creation.
+              </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label className="disco-label">📧 Email (Login)</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    className="disco-input"
-                    required
-                    placeholder="organizer@example.com"
-                  />
-                </div>
-
                 <div>
                   <label className="disco-label">🏢 Organizer Name</label>
                   <input

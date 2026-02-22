@@ -80,7 +80,7 @@ const Home = () => {
                 transition: 'all 0.3s ease',
                 textShadow: '0 2px 4px rgba(0,0,0,0.3)'
               }}>
-                � Browse Events
+                Browse Events
               </Link>
               <Link to="/dashboard" style={{
                 background: 'linear-gradient(135deg, #3a86ff 0%, #00ffff 100%)',

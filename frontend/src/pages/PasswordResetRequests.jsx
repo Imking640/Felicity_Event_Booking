@@ -10,6 +10,10 @@ const PasswordResetRequests = () => {
   const [filter, setFilter] = useState('pending');
   const [createdCredentials, setCreatedCredentials] = useState(null);
   const [processingId, setProcessingId] = useState(null);
+  const [adminComments, setAdminComments] = useState({});
+  const [historyOrgId, setHistoryOrgId] = useState(null);
+  const [resetHistory, setResetHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     fetchRequests();
@@ -35,11 +39,14 @@ const PasswordResetRequests = () => {
     
     setProcessingId(id);
     try {
-      const res = await api.post(`/admin/password-reset-requests/${id}/reset`);
+      const res = await api.post(`/admin/password-reset-requests/${id}/reset`, {
+        adminComment: adminComments[id] || ''
+      });
       if (res.data.success) {
         createConfetti();
         showDiscoToast('Password reset successfully!', true);
         setCreatedCredentials(res.data.credentials);
+        setAdminComments(prev => { const n = {...prev}; delete n[id]; return n; });
         fetchRequests();
       }
     } catch (err) {
@@ -54,15 +61,32 @@ const PasswordResetRequests = () => {
     
     setProcessingId(id);
     try {
-      const res = await api.post(`/admin/password-reset-requests/${id}/close`);
+      const res = await api.post(`/admin/password-reset-requests/${id}/close`, {
+        adminComment: adminComments[id] || ''
+      });
       if (res.data.success) {
         showDiscoToast('Request closed', true);
+        setAdminComments(prev => { const n = {...prev}; delete n[id]; return n; });
         fetchRequests();
       }
     } catch (err) {
       showDiscoToast(err.response?.data?.message || 'Failed to close request', false);
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const fetchResetHistory = async (orgId) => {
+    if (historyOrgId === orgId) { setHistoryOrgId(null); return; }
+    setHistoryOrgId(orgId);
+    setLoadingHistory(true);
+    try {
+      const res = await api.get(`/admin/organizers/${orgId}/reset-history`);
+      if (res.data.success) setResetHistory(res.data.requests || []);
+    } catch (err) {
+      showDiscoToast('Failed to load history', false);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -212,6 +236,12 @@ const PasswordResetRequests = () => {
                         </div>
                       )}
                       
+                      {req.adminComment && (
+                        <div style={{ color: '#ffa500', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                          🛡️ Admin: {req.adminComment}
+                        </div>
+                      )}
+                      
                       <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#888' }}>
                         Requested: {new Date(req.createdAt).toLocaleString()}
                       </div>
@@ -221,10 +251,35 @@ const PasswordResetRequests = () => {
                           {req.status === 'completed' ? 'Completed' : 'Closed'}: {new Date(req.completedAt).toLocaleString()}
                         </div>
                       )}
+                      
+                      <button
+                        onClick={() => fetchResetHistory(req.organizer?._id || req.organizer)}
+                        style={{ marginTop: '0.5rem', background: 'none', border: '1px solid #00ffff', color: '#00ffff', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                      >
+                        {historyOrgId === (req.organizer?._id || req.organizer) ? '▲ Hide History' : '📜 Reset History'}
+                      </button>
                     </div>
 
                     {req.status === 'pending' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '180px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '220px' }}>
+                        <textarea
+                          placeholder="Admin comment (optional)..."
+                          value={adminComments[req._id] || ''}
+                          onChange={e => setAdminComments(prev => ({ ...prev, [req._id]: e.target.value }))}
+                          rows={2}
+                          maxLength={500}
+                          style={{
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(0,255,255,0.3)',
+                            background: 'rgba(0,0,0,0.3)',
+                            color: '#fff',
+                            fontSize: '0.85rem',
+                            resize: 'vertical',
+                            fontFamily: 'inherit'
+                          }}
+                        />
                         <button 
                           className="disco-button" 
                           onClick={() => handleResetPassword(req._id)}
@@ -275,6 +330,42 @@ const PasswordResetRequests = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Reset History Panel */}
+                  {historyOrgId === (req.organizer?._id || req.organizer) && (
+                    <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(0,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(0,255,255,0.2)' }}>
+                      <h5 style={{ color: '#00ffff', marginBottom: '0.75rem', fontFamily: "'Bungee', cursive", fontSize: '0.95rem' }}>
+                        📜 Password Reset History — {req.organizerName}
+                      </h5>
+                      {loadingHistory ? (
+                        <div style={{ textAlign: 'center', padding: '1rem', color: '#888' }}>Loading history...</div>
+                      ) : resetHistory.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '1rem', color: '#888' }}>No previous reset requests found.</div>
+                      ) : (
+                        <div style={{ display: 'grid', gap: '0.5rem' }}>
+                          {resetHistory.map(h => (
+                            <div key={h._id} style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', borderLeft: `3px solid ${h.status === 'completed' ? '#00ff00' : h.status === 'closed' ? '#888' : '#ffff00'}` }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                <span style={{ fontWeight: 'bold', color: h.status === 'completed' ? '#00ff00' : h.status === 'closed' ? '#888' : '#ffff00', fontSize: '0.8rem', textTransform: 'uppercase' }}>
+                                  {h.status === 'completed' ? '✅' : h.status === 'closed' ? '❌' : '⏳'} {h.status}
+                                </span>
+                                <span style={{ color: '#888', fontSize: '0.75rem' }}>
+                                  {new Date(h.createdAt).toLocaleDateString()} {new Date(h.createdAt).toLocaleTimeString()}
+                                </span>
+                              </div>
+                              {h.reason && <div style={{ color: '#ddd', fontSize: '0.8rem' }}>💬 {h.reason}</div>}
+                              {h.adminComment && <div style={{ color: '#ffa500', fontSize: '0.8rem' }}>🛡️ Admin: {h.adminComment}</div>}
+                              {h.completedAt && (
+                                <div style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                                  {h.status === 'completed' ? 'Completed' : 'Closed'}: {new Date(h.completedAt).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

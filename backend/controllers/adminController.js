@@ -29,7 +29,6 @@ exports.getAllOrganizers = async (req, res) => {
 exports.createOrganizer = async (req, res) => {
   try {
     const {
-      email,
       organizerName,
       category,
       description,
@@ -38,19 +37,24 @@ exports.createOrganizer = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!email || !organizerName || !category) {
+    if (!organizerName || !category) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide email, organizer name, and category'
+        message: 'Please provide organizer name and category'
       });
     }
 
-    // Check if email already exists
+    // Auto-generate email from organizer name
+    const slug = organizerName.toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 20);
+    const randomSuffix = crypto.randomBytes(3).toString('hex');
+    const email = `${slug}.${randomSuffix}@felicity.iiith.ac.in`;
+
+    // Check if email already exists (extremely unlikely with random suffix, but just in case)
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'Email already registered'
+        message: 'Generated email collision, please try again'
       });
     }
 
@@ -311,7 +315,8 @@ exports.completePasswordResetRequest = async (req, res) => {
       });
     }
     
-    // Find the organizer and reset their password
+    const { adminComment } = req.body || {};
+    
     const organizer = await Organizer.findById(request.organizer);
     
     if (!organizer) {
@@ -327,10 +332,10 @@ exports.completePasswordResetRequest = async (req, res) => {
     organizer.password = newPassword;
     await organizer.save();
     
-    // Mark request as completed
     request.status = 'completed';
     request.completedAt = new Date();
     request.completedBy = req.user._id;
+    request.adminComment = adminComment || '';
     await request.save();
     
     res.json({
@@ -368,10 +373,12 @@ exports.closePasswordResetRequest = async (req, res) => {
       });
     }
     
-    // Mark request as closed
+    const { adminComment } = req.body || {};
+    
     request.status = 'closed';
     request.completedAt = new Date();
     request.completedBy = req.user._id;
+    request.adminComment = adminComment || '';
     await request.save();
     
     res.json({
@@ -384,6 +391,29 @@ exports.closePasswordResetRequest = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to close password reset request',
+      error: error.message
+    });
+  }
+};
+
+exports.getOrganizerResetHistory = async (req, res) => {
+  try {
+    const PasswordResetRequest = require('../models/PasswordResetRequest');
+    
+    const requests = await PasswordResetRequest.find({ organizer: req.params.id })
+      .populate('completedBy', 'adminName email')
+      .sort('-createdAt');
+    
+    res.json({
+      success: true,
+      count: requests.length,
+      requests
+    });
+  } catch (error) {
+    console.error('Get organizer reset history error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch reset history',
       error: error.message
     });
   }

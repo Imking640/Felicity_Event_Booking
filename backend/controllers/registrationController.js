@@ -799,6 +799,19 @@ exports.scanTicket = async (req, res) => {
       registration.attended = true;
       registration.attendanceMarkedAt = Date.now();
       registration.attendanceMarkedBy = req.user.id;
+      
+      // Audit log for QR scan
+      if (!registration.attendanceAuditLog) {
+        registration.attendanceAuditLog = [];
+      }
+      registration.attendanceAuditLog.push({
+        action: 'marked_present',
+        by: req.user.id,
+        at: Date.now(),
+        reason: 'QR code scanned',
+        method: 'qr_scan'
+      });
+      
       await registration.save();
     }
     

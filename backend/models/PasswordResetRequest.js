@@ -21,6 +21,11 @@ const passwordResetRequestSchema = new mongoose.Schema({
     trim: true,
     maxlength: [500, 'Reason cannot exceed 500 characters']
   },
+  adminComment: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Comment cannot exceed 500 characters']
+  },
   status: {
     type: String,
     enum: ['pending', 'completed', 'closed'],

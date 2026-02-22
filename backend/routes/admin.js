@@ -11,7 +11,8 @@ const {
   getDashboardStats,
   getPasswordResetRequests,
   completePasswordResetRequest,
-  closePasswordResetRequest
+  closePasswordResetRequest,
+  getOrganizerResetHistory
 } = require('../controllers/adminController');
 
 // All routes require admin authentication
@@ -42,5 +43,6 @@ router.post('/organizers/:id/reset-password', resetOrganizerPassword);
 router.get('/password-reset-requests', getPasswordResetRequests);
 router.post('/password-reset-requests/:id/reset', completePasswordResetRequest);
 router.post('/password-reset-requests/:id/close', closePasswordResetRequest);
+router.get('/organizers/:id/reset-history', getOrganizerResetHistory);
 
 module.exports = router;

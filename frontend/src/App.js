@@ -1,6 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -27,6 +27,26 @@ import OrganizerView from './pages/OrganizerView';
 import PaymentApprovals from './pages/PaymentApprovals';
 import AttendanceScanner from './pages/AttendanceScanner';
 
+const HomeOrDashboard = () => {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return <Home />;
+  if (user?.role === 'admin') return <Navigate to="/dashboard" replace />;
+  if (user?.role === 'organizer') return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/dashboard" replace />;
+};
+
+const LoginGuard = () => {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return <Login />;
+};
+
+const RegisterGuard = () => {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return <Register />;
+};
+
 function App() {
   return (
     <Router>
@@ -34,9 +54,9 @@ function App() {
         <div style={{ minHeight: '100vh', backgroundColor: '#0d0221' }}>
           <Navbar />
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/" element={<HomeOrDashboard />} />
+            <Route path="/login" element={<LoginGuard />} />
+            <Route path="/register" element={<RegisterGuard />} />
             <Route path="/events" element={<Events />} />
             <Route 
               path="/onboarding" 
