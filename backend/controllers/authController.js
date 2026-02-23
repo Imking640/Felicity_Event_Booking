@@ -620,3 +620,37 @@ exports.requestPasswordReset = async (req, res) => {
     });
   }
 };
+
+// @desc    Get organizer's own password reset history
+// @route   GET /api/auth/my-reset-history
+// @access  Private (Organizer)
+exports.getMyResetHistory = async (req, res) => {
+  try {
+    if (req.user.role !== 'organizer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only organizers can access reset history'
+      });
+    }
+    
+    const PasswordResetRequest = require('../models/PasswordResetRequest');
+    
+    const requests = await PasswordResetRequest.find({ organizer: req.user._id })
+      .sort('-createdAt')
+      .select('-organizer'); // Don't need to send back organizer ID
+    
+    res.json({
+      success: true,
+      count: requests.length,
+      requests
+    });
+    
+  } catch (error) {
+    console.error('Get my reset history error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch reset history',
+      error: error.message
+    });
+  }
+};

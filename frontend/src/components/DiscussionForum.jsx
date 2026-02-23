@@ -25,17 +25,37 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
     try {
       const res = await api.get(`/discussions/${eventId}`);
       if (res.data.success) {
-        // notify on new messages
         const newMessages = res.data.messages || [];
+        const prevMessages = messages;
+        
         setDiscussion(res.data.discussion);
-        setMessages(prev => {
-          const prevCount = prev?.length || 0;
-          const newCount = newMessages.length;
-          if (prevCount > 0 && newCount > prevCount) {
-            showDiscoToast(`📣 ${newCount - prevCount} new message(s) in discussion`, true);
-          }
-          return newMessages;
-        });
+        setMessages(newMessages);
+        
+        // Notify on new messages
+        if (prevMessages.length > 0 && newMessages.length > prevMessages.length) {
+          const newCount = newMessages.length - prevMessages.length;
+          
+          // Find the new messages
+          const newMessagesList = newMessages.slice(prevMessages.length);
+          
+          // Show notification for each new message
+          newMessagesList.forEach((msg, index) => {
+            setTimeout(() => {
+              const authorName = msg.author?.organizerName || 
+                               `${msg.author?.firstName || ''} ${msg.author?.lastName || ''}`.trim() || 
+                               'Someone';
+              const messagePreview = msg.content.length > 50 
+                ? msg.content.substring(0, 50) + '...' 
+                : msg.content;
+              
+              let icon = '💬';
+              if (msg.messageType === 'announcement') icon = '📢';
+              if (msg.messageType === 'question') icon = '❓';
+              
+              showDiscoToast(`${icon} ${authorName}: ${messagePreview}`, true);
+            }, index * 300); // Stagger notifications by 300ms
+          });
+        }
       }
     } catch (err) {
       console.error('Error fetching discussion:', err);
@@ -43,7 +63,7 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, messages]);
 
   useEffect(() => {
     fetchDiscussion();
@@ -68,6 +88,7 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
       });
 
       if (res.data.success) {
+        showDiscoToast(replyingTo ? '💬 Reply posted!' : '✅ Message posted!', true);
         setNewMessage('');
         setReplyingTo(null);
         setMessageType('message');
@@ -75,6 +96,7 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to post message');
+      showDiscoToast(err.response?.data?.message || 'Failed to post message', false);
     } finally {
       setPosting(false);
     }
@@ -86,11 +108,13 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
         content
       });
       if (res.data.success) {
+        showDiscoToast('✏️ Message updated!', true);
         setEditingMessage(null);
         fetchDiscussion();
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to edit message');
+      showDiscoToast(err.response?.data?.message || 'Failed to edit message', false);
     }
   };
 
@@ -100,10 +124,12 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
     try {
       const res = await api.delete(`/discussions/${eventId}/messages/${messageId}`);
       if (res.data.success) {
+        showDiscoToast('🗑️ Message deleted', true);
         fetchDiscussion();
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete message');
+      showDiscoToast(err.response?.data?.message || 'Failed to delete message', false);
     }
   };
 
@@ -111,10 +137,12 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
     try {
       const res = await api.post(`/discussions/${eventId}/messages/${messageId}/pin`);
       if (res.data.success) {
+        showDiscoToast(res.data.message === 'Message pinned' ? '📌 Message pinned!' : '📍 Message unpinned', true);
         fetchDiscussion();
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to pin message');
+      showDiscoToast(err.response?.data?.message || 'Failed to pin message', false);
     }
   };
 
@@ -137,10 +165,17 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
     try {
       const res = await api.post(`/discussions/${eventId}/toggle`);
       if (res.data.success) {
+        showDiscoToast(
+          res.data.discussion.isEnabled 
+            ? '🔓 Discussion forum enabled!' 
+            : '🔒 Discussion forum disabled',
+          true
+        );
         fetchDiscussion();
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to toggle discussion');
+      showDiscoToast(err.response?.data?.message || 'Failed to toggle discussion', false);
     }
   };
 

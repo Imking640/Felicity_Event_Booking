@@ -23,6 +23,9 @@ router.get('/organizers', authController.listOrganizersPublic);
 // Public: request password reset (for organizers)
 router.post('/request-password-reset', authController.requestPasswordReset);
 
+// Protected: get organizer's own reset history
+router.get('/my-reset-history', verifyToken, authController.getMyResetHistory);
+
 // Protected routes (require authentication)
 router.get('/me', verifyToken, authController.getMe);
 router.post('/logout', verifyToken, authController.logout);

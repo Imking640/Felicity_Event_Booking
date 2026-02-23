@@ -115,11 +115,35 @@ exports.removeOrganizer = async (req, res) => {
     const { action } = req.query; // 'disable', 'delete', or 'archive'
 
     if (action === 'delete') {
-      // Permanently delete
+      // Permanently delete - also delete all their events, registrations, and tickets
+      const Event = require('../models/Event');
+      const Registration = require('../models/Registration');
+      const Ticket = require('../models/Ticket');
+      
+      // Find all events by this organizer
+      const organizerEvents = await Event.find({ organizer: req.params.id });
+      const eventIds = organizerEvents.map(e => e._id);
+      
+      // Delete all tickets for these events
+      await Ticket.deleteMany({ event: { $in: eventIds } });
+      console.log(`🗑️ Deleted tickets for organizer ${organizer.organizerName}'s events`);
+      
+      // Delete all registrations for these events
+      await Registration.deleteMany({ event: { $in: eventIds } });
+      console.log(`🗑️ Deleted registrations for organizer ${organizer.organizerName}'s events`);
+      
+      // Delete all events
+      await Event.deleteMany({ organizer: req.params.id });
+      console.log(`🗑️ Deleted ${eventIds.length} events for organizer ${organizer.organizerName}`);
+      
+      // Delete the organizer
       await organizer.deleteOne();
+      console.log(`🗑️ Permanently deleted organizer: ${organizer.organizerName}`);
+      
       return res.json({
         success: true,
-        message: 'Organizer permanently deleted'
+        message: 'Organizer and all associated events, registrations, and tickets permanently deleted',
+        deletedEvents: eventIds.length
       });
     } else {
       // Disable (soft delete)

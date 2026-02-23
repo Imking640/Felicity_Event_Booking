@@ -13,8 +13,7 @@ const OrganizerProfile = () => {
     category: '',
     description: '',
     contactEmail: '',
-    contactNumber: '',
-    discordWebhook: ''
+    contactNumber: ''
   });
 
   useEffect(() => {
@@ -24,8 +23,7 @@ const OrganizerProfile = () => {
         category: user.category || '',
         description: user.description || '',
         contactEmail: user.contactEmail || user.email || '',
-        contactNumber: user.contactNumber || '',
-        discordWebhook: user.discordWebhook || ''
+        contactNumber: user.contactNumber || ''
       });
     }
   }, [user]);
@@ -57,17 +55,49 @@ const OrganizerProfile = () => {
     }
   };
 
+  const [resetReason, setResetReason] = useState('');
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [resetHistory, setResetHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const fetchResetHistory = async () => {
+    if (!user?._id) return;
+    setLoadingHistory(true);
+    try {
+      const res = await api.get(`/auth/my-reset-history`);
+      if (res.data.success) {
+        setResetHistory(res.data.requests || []);
+      }
+    } catch (err) {
+      console.error('Fetch reset history error', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchResetHistory();
+    }
+  }, [user]);
+
   const handleRequestPasswordReset = async () => {
-    if (!window.confirm('Request a password reset? Admin will be notified and will reset your password.')) return;
+    if (!resetReason.trim()) {
+      showDiscoToast('Please provide a reason for password reset', false);
+      return;
+    }
     
     setRequestingReset(true);
     try {
       const res = await api.post('/auth/request-password-reset', { 
         email: user?.email,
-        reason: 'Requested from profile page'
+        reason: resetReason.trim()
       });
       if (res.data.success) {
         showDiscoToast('Password reset request submitted! Admin will process it shortly.', true);
+        setResetReason('');
+        setShowResetForm(false);
+        fetchResetHistory();
       }
     } catch (err) {
       console.error('Request password reset error', err);
@@ -134,15 +164,13 @@ const OrganizerProfile = () => {
               </div>
 
               <div style={{ background: 'rgba(138,43,226,0.1)', padding: '1.5rem', borderRadius: '12px', border: '2px solid rgba(138,43,226,0.3)' }}>
-                <div style={{ color: '#8a2be2', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>🔗 Discord Webhook</div>
-                <div style={{ fontSize: '0.9rem', wordBreak: 'break-all', fontFamily: 'monospace' }}>
-                  {user?.discordWebhook || 'Not configured'}
+                <div style={{ color: '#8a2be2', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>🔗 Discord Webhook (Global)</div>
+                <div style={{ fontSize: '0.9rem', wordBreak: 'break-all', fontFamily: 'monospace', color: '#aaa' }}>
+                  {process.env.REACT_APP_DISCORD_WEBHOOK_URL ? '✅ Configured by Admin' : 'Not configured'}
                 </div>
-                {user?.discordWebhook && (
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#aaa' }}>
-                    ✅ Auto-post new events to Discord
-                  </div>
-                )}
+                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#aaa' }}>
+                  ℹ️ Discord webhook is managed globally by admin. New events are auto-posted to Discord.
+                </div>
               </div>
 
               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.2)' }}>
@@ -156,18 +184,116 @@ const OrganizerProfile = () => {
                 <div style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '1rem' }}>
                   Forgot your password? Request a password reset and the admin will generate a new password for you.
                 </div>
-                <button 
-                  type="button"
-                  className="disco-button" 
-                  onClick={handleRequestPasswordReset}
-                  disabled={requestingReset}
-                  style={{ 
-                    background: 'linear-gradient(90deg, #ff4444, #ff6b6b)',
-                    padding: '0.75rem 1.5rem'
-                  }}
-                >
-                  {requestingReset ? '⏳ Requesting...' : '🔑 Request Password Reset'}
-                </button>
+                
+                {!showResetForm ? (
+                  <button 
+                    type="button"
+                    className="disco-button" 
+                    onClick={() => setShowResetForm(true)}
+                    style={{ 
+                      background: 'linear-gradient(90deg, #ff4444, #ff6b6b)',
+                      padding: '0.75rem 1.5rem'
+                    }}
+                  >
+                    🔑 Request Password Reset
+                  </button>
+                ) : (
+                  <div>
+                    <label className="disco-label">📝 Reason for Reset Request</label>
+                    <textarea
+                      value={resetReason}
+                      onChange={(e) => setResetReason(e.target.value)}
+                      className="disco-input"
+                      rows={3}
+                      placeholder="Please explain why you need a password reset..."
+                      maxLength={500}
+                      style={{ marginBottom: '1rem' }}
+                    />
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button 
+                        type="button"
+                        className="disco-button" 
+                        onClick={handleRequestPasswordReset}
+                        disabled={requestingReset || !resetReason.trim()}
+                        style={{ 
+                          background: 'linear-gradient(90deg, #ff4444, #ff6b6b)',
+                          padding: '0.75rem 1.5rem'
+                        }}
+                      >
+                        {requestingReset ? '⏳ Requesting...' : '� Submit Request'}
+                      </button>
+                      <button 
+                        type="button"
+                        className="disco-button" 
+                        onClick={() => {
+                          setShowResetForm(false);
+                          setResetReason('');
+                        }}
+                        style={{ 
+                          background: 'linear-gradient(90deg, #666, #888)',
+                          padding: '0.75rem 1.5rem'
+                        }}
+                      >
+                        ❌ Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reset History */}
+                {resetHistory.length > 0 && (
+                  <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                    <div style={{ color: '#00ffff', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '1rem' }}>
+                      📜 Your Previous Reset Requests
+                    </div>
+                    {loadingHistory ? (
+                      <div style={{ textAlign: 'center', padding: '1rem', color: '#888' }}>Loading...</div>
+                    ) : (
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        {resetHistory.map(req => (
+                          <div 
+                            key={req._id} 
+                            style={{ 
+                              padding: '0.75rem', 
+                              background: 'rgba(0,0,0,0.3)', 
+                              borderRadius: '6px', 
+                              borderLeft: `3px solid ${req.status === 'completed' ? '#00ff00' : req.status === 'closed' ? '#888' : '#ffff00'}` 
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                              <span style={{ 
+                                fontWeight: 'bold', 
+                                color: req.status === 'completed' ? '#00ff00' : req.status === 'closed' ? '#888' : '#ffff00',
+                                fontSize: '0.8rem',
+                                textTransform: 'uppercase'
+                              }}>
+                                {req.status === 'completed' ? '✅ Completed' : req.status === 'closed' ? '❌ Closed' : '⏳ Pending'}
+                              </span>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>
+                                {new Date(req.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {req.reason && (
+                              <div style={{ color: '#ddd', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+                                💬 Your reason: {req.reason}
+                              </div>
+                            )}
+                            {req.adminComment && (
+                              <div style={{ color: '#ffa500', fontSize: '0.8rem' }}>
+                                🛡️ Admin response: {req.adminComment}
+                              </div>
+                            )}
+                            {req.completedAt && (
+                              <div style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                                {req.status === 'completed' ? 'Completed' : 'Closed'}: {new Date(req.completedAt).toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -236,21 +362,6 @@ const OrganizerProfile = () => {
                   pattern="[0-9]{10}"
                   placeholder="10-digit number"
                 />
-              </div>
-
-              <div>
-                <label className="disco-label">🔗 Discord Webhook URL (Optional)</label>
-                <input
-                  type="url"
-                  name="discordWebhook"
-                  value={form.discordWebhook}
-                  onChange={handleChange}
-                  className="disco-input"
-                  placeholder="https://discord.com/api/webhooks/..."
-                />
-                <div style={{ fontSize: '0.8rem', color: '#aaa', marginTop: '0.5rem' }}>
-                  New events will be automatically posted to this webhook
-                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>

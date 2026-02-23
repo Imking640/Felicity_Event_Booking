@@ -162,25 +162,71 @@ const EventDetailOrganizer = () => {
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {/* Header */}
         <div className="disco-card" style={{ padding: '2rem', marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-            <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '250px' }}>
               <h1 style={{ fontFamily: "'Bungee', cursive", color: '#ffff00', fontSize: '2rem', marginBottom: '0.5rem' }}>
                 {event.eventName}
               </h1>
-              <div style={{ color: '#00ffff', fontSize: '1rem' }}>
-                {event.eventType} • Status: <span style={{ color: '#ff00ff' }}>{event.status.toUpperCase()}</span>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ 
+                  background: event.eventType === 'Merchandise' ? 'linear-gradient(90deg, #ff006e, #ffbe0b)' : 'linear-gradient(90deg, #00ffff, #00ff88)',
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold',
+                  color: '#000'
+                }}>
+                  {event.eventType === 'Merchandise' ? '🛍️ MERCH' : '📅 NORMAL'}
+                </span>
+                <span style={{ 
+                  background: event.status === 'published' ? 'rgba(0,255,0,0.2)' : 
+                             event.status === 'draft' ? 'rgba(255,255,0,0.2)' :
+                             event.status === 'ongoing' ? 'rgba(0,255,255,0.2)' :
+                             event.status === 'completed' ? 'rgba(128,128,128,0.2)' : 'rgba(255,0,0,0.2)',
+                  border: event.status === 'published' ? '2px solid #00ff00' : 
+                          event.status === 'draft' ? '2px solid #ffff00' :
+                          event.status === 'ongoing' ? '2px solid #00ffff' :
+                          event.status === 'completed' ? '2px solid #888' : '2px solid #ff0000',
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold',
+                  color: event.status === 'published' ? '#00ff00' : 
+                         event.status === 'draft' ? '#ffff00' :
+                         event.status === 'ongoing' ? '#00ffff' :
+                         event.status === 'completed' ? '#888' : '#ff0000',
+                  textTransform: 'uppercase'
+                }}>
+                  {event.status === 'published' && '✅ PUBLISHED'}
+                  {event.status === 'draft' && '📝 DRAFT'}
+                  {event.status === 'ongoing' && '▶️ ONGOING'}
+                  {event.status === 'completed' && '🏁 COMPLETED'}
+                  {event.status === 'cancelled' && '❌ CANCELLED'}
+                </span>
               </div>
             </div>
             
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               {event.status === 'draft' && (
-                <button className="disco-button" onClick={handlePublish}>
-                  ✅ Publish
+                <button 
+                  className="disco-button" 
+                  onClick={handlePublish}
+                  style={{ 
+                    background: 'linear-gradient(90deg, #00ff00, #00ff88)',
+                    color: '#000',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  ✅ PUBLISH
                 </button>
               )}
               {(event.status === 'published' || event.status === 'ongoing' || event.status === 'completed') && (
-                <button className="disco-button" onClick={() => navigate(`/events/${id}/attendance`)}>
-                  📱 QR Scanner
+                <button 
+                  className="disco-button" 
+                  onClick={() => navigate(`/events/${id}/attendance`)}
+                  style={{ background: 'linear-gradient(90deg, #8b5cf6, #a78bfa)' }}
+                >
+                  📱 QR SCANNER
                 </button>
               )}
               {event.status === 'published' && (
@@ -189,21 +235,33 @@ const EventDetailOrganizer = () => {
                   onClick={handleToggleRegistration}
                   style={{ 
                     background: event.registrationClosed 
-                      ? 'linear-gradient(90deg, #00cc00, #00ff00)' 
-                      : 'linear-gradient(90deg, #ff6600, #ff9900)' 
+                      ? 'linear-gradient(90deg, #22c55e, #4ade80)' 
+                      : 'linear-gradient(90deg, #f59e0b, #fbbf24)' 
                   }}
                 >
-                  {event.registrationClosed ? '▶️ Resume Registration' : '⏸️ Close Registration'}
+                  {event.registrationClosed ? '▶️ OPEN REGISTRATION' : '⏸️ CLOSE REGISTRATION'}
                 </button>
               )}
-              <button className="disco-button" onClick={() => navigate(`/organizer/events/${id}/edit`)}>
-                ✏️ Edit Event
+              <button 
+                className="disco-button" 
+                onClick={() => navigate(`/organizer/events/${id}/edit`)}
+                style={{ background: 'linear-gradient(90deg, #3b82f6, #60a5fa)' }}
+              >
+                ✏️ EDIT EVENT
               </button>
-              <button className="disco-button" onClick={() => navigate(`/organizer/events`)} style={{ background: 'linear-gradient(90deg,#444,#666)' }}>
-                ◀ Back
+              <button 
+                className="disco-button" 
+                onClick={() => navigate(`/organizer/events`)} 
+                style={{ background: 'linear-gradient(90deg, #6b7280, #9ca3af)' }}
+              >
+                ◀ BACK
               </button>
-              <button className="disco-button" onClick={handleDelete} style={{ background: 'linear-gradient(90deg,#ff006e,#ff8fab)' }}>
-                🗑️ Delete
+              <button 
+                className="disco-button" 
+                onClick={handleDelete} 
+                style={{ background: 'linear-gradient(90deg, #ef4444, #f87171)' }}
+              >
+                🗑️ DELETE
               </button>
             </div>
           </div>

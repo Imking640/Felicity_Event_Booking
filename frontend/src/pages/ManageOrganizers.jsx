@@ -96,12 +96,15 @@ const ManageOrganizers = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('PERMANENTLY delete this organizer? This cannot be undone!')) return;
+    if (!window.confirm('⚠️ PERMANENTLY DELETE this organizer?\n\nThis will also DELETE:\n• All their events\n• All registrations for those events\n• All tickets for those events\n\nThis action CANNOT be undone!')) return;
     
     try {
       const res = await api.delete(`/admin/organizers/${id}?action=delete`);
       if (res.data.success) {
-        showDiscoToast('Organizer deleted permanently', true);
+        showDiscoToast(
+          `Organizer deleted permanently. ${res.data.deletedEvents || 0} event(s) also removed.`,
+          true
+        );
         fetchOrganizers();
       }
     } catch (err) {
