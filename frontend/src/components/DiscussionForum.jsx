@@ -15,6 +15,7 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [previousMessageCount, setPreviousMessageCount] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -26,17 +27,17 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
       const res = await api.get(`/discussions/${eventId}`);
       if (res.data.success) {
         const newMessages = res.data.messages || [];
-        const prevMessages = messages;
+        const currentCount = newMessages.length;
         
         setDiscussion(res.data.discussion);
         setMessages(newMessages);
         
-        // Notify on new messages
-        if (prevMessages.length > 0 && newMessages.length > prevMessages.length) {
-          const newCount = newMessages.length - prevMessages.length;
+        // Notify on new messages only if we had messages before and count increased
+        if (previousMessageCount > 0 && currentCount > previousMessageCount) {
+          const newCount = currentCount - previousMessageCount;
           
-          // Find the new messages
-          const newMessagesList = newMessages.slice(prevMessages.length);
+          // Find the new messages (last N messages)
+          const newMessagesList = newMessages.slice(-newCount);
           
           // Show notification for each new message
           newMessagesList.forEach((msg, index) => {
@@ -56,6 +57,9 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
             }, index * 300); // Stagger notifications by 300ms
           });
         }
+        
+        // Update the previous count
+        setPreviousMessageCount(currentCount);
       }
     } catch (err) {
       console.error('Error fetching discussion:', err);
@@ -63,7 +67,7 @@ const DiscussionForum = ({ eventId, eventOrganizerId, isRegistered }) => {
     } finally {
       setLoading(false);
     }
-  }, [eventId, messages]);
+  }, [eventId, previousMessageCount]);
 
   useEffect(() => {
     fetchDiscussion();

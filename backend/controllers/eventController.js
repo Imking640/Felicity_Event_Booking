@@ -120,9 +120,15 @@ exports.getEvents = async (req, res) => {
         const tagsStr = (ev.tags || []).join(' ').toLowerCase();
         
         // Check if search query is contained in any field
+        // If organizer name matches, show all their events
+        if (org.includes(searchQuery)) {
+          console.log(`✅ Match found: Organizer "${ev.organizer?.organizerName}" matches search`);
+          return true;
+        }
+        
+        // Otherwise check event name, description, and tags
         return name.includes(searchQuery) || 
                desc.includes(searchQuery) || 
-               org.includes(searchQuery) ||
                tagsStr.includes(searchQuery);
       });
       
