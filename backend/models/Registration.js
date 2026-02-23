@@ -150,6 +150,83 @@ registrationSchema.virtual('isActive').get(function() {
 registrationSchema.set('toJSON', { virtuals: true });
 registrationSchema.set('toObject', { virtuals: true });
 
+// CASCADE DELETE: When a registration is deleted, delete its ticket
+registrationSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
+  try {
+    const registrationId = this._id;
+    
+    console.log(`🗑️ Cascading delete for registration: ${registrationId}`);
+    
+    // Import Ticket model
+    const Ticket = require('./Ticket');
+    
+    // Delete ticket associated with this registration
+    const ticketDeleteResult = await Ticket.deleteMany({ registration: registrationId });
+    console.log(`  ✓ Deleted ${ticketDeleteResult.deletedCount} ticket(s)`);
+    
+    // Decrement event registration count
+    const Event = require('./Event');
+    const event = await Event.findById(this.event);
+    if (event) {
+      await event.decrementRegistrations();
+      console.log(`  ✓ Decremented event registration count`);
+    }
+    
+    next();
+  } catch (error) {
+    console.error('❌ Error in registration cascade delete:', error);
+    next(error);
+  }
+});
+
+// CASCADE DELETE for bulk operations (deleteMany)
+registrationSchema.pre('deleteMany', async function(next) {
+  try {
+    const filter = this.getFilter();
+    console.log(`🗑️ Bulk cascading delete for registrations with filter:`, filter);
+    
+    // Find all registrations that will be deleted
+    const Registration = mongoose.model('Registration');
+    const registrations = await Registration.find(filter);
+    
+    if (registrations.length === 0) {
+      console.log('  ℹ️ No registrations to delete');
+      return next();
+    }
+    
+    const registrationIds = registrations.map(r => r._id);
+    
+    // Import Ticket model
+    const Ticket = require('./Ticket');
+    
+    // Delete all tickets for these registrations
+    const ticketDeleteResult = await Ticket.deleteMany({ registration: { $in: registrationIds } });
+    console.log(`  ✓ Deleted ${ticketDeleteResult.deletedCount} ticket(s)`);
+    
+    // Update event registration counts
+    const Event = require('./Event');
+    const eventUpdates = {};
+    
+    for (const reg of registrations) {
+      if (reg.event) {
+        eventUpdates[reg.event.toString()] = (eventUpdates[reg.event.toString()] || 0) + 1;
+      }
+    }
+    
+    for (const [eventId, count] of Object.entries(eventUpdates)) {
+      await Event.findByIdAndUpdate(eventId, {
+        $inc: { currentRegistrations: -count }
+      });
+    }
+    console.log(`  ✓ Updated registration counts for ${Object.keys(eventUpdates).length} event(s)`);
+    
+    next();
+  } catch (error) {
+    console.error('❌ Error in bulk registration cascade delete:', error);
+    next(error);
+  }
+});
+
 const Registration = mongoose.model('Registration', registrationSchema);
 
 module.exports = Registration;

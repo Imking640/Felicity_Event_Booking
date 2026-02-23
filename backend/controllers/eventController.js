@@ -362,19 +362,24 @@ exports.deleteEvent = async (req, res) => {
       });
     }
     
-    // Can only delete draft events or events with no registrations
+    // Store event details for response
+    const eventName = event.eventName;
+    const registrationCount = event.currentRegistrations;
+    
+    // Warn if deleting event with registrations
     if (event.status !== 'draft' && event.currentRegistrations > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot delete event with existing registrations. Cancel it instead.'
-      });
+      console.log(`⚠️ Deleting event "${eventName}" with ${registrationCount} existing registrations`);
     }
     
+    // Delete event (cascade delete will handle related data)
     await event.deleteOne();
     
     res.json({
       success: true,
-      message: 'Event deleted successfully'
+      message: registrationCount > 0 
+        ? `Event deleted successfully. ${registrationCount} registration(s) and associated tickets were also removed.`
+        : 'Event deleted successfully',
+      deletedRegistrations: registrationCount
     });
   } catch (error) {
     console.error('Delete event error:', error);

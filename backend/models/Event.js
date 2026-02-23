@@ -267,6 +267,39 @@ eventSchema.methods.decrementRegistrations = async function() {
 eventSchema.set('toJSON', { virtuals: true });
 eventSchema.set('toObject', { virtuals: true });
 
+// CASCADE DELETE: When an event is deleted, delete all related data
+eventSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
+  try {
+    const eventId = this._id;
+    
+    console.log(`🗑️ Cascading delete for event: ${this.eventName} (${eventId})`);
+    
+    // Import models (avoid circular dependency issues)
+    const Registration = require('./Registration');
+    const Ticket = require('./Ticket');
+    const Discussion = require('./Discussion');
+    
+    // Delete all tickets for this event
+    const ticketDeleteResult = await Ticket.deleteMany({ event: eventId });
+    console.log(`  ✓ Deleted ${ticketDeleteResult.deletedCount} tickets`);
+    
+    // Delete all registrations for this event
+    const registrationDeleteResult = await Registration.deleteMany({ event: eventId });
+    console.log(`  ✓ Deleted ${registrationDeleteResult.deletedCount} registrations`);
+    
+    // Delete discussion forum for this event
+    const discussionDeleteResult = await Discussion.deleteOne({ event: eventId });
+    console.log(`  ✓ Deleted discussion forum (${discussionDeleteResult.deletedCount})`);
+    
+    console.log(`✅ Cascade delete completed for event: ${this.eventName}`);
+    
+    next();
+  } catch (error) {
+    console.error('❌ Error in event cascade delete:', error);
+    next(error);
+  }
+});
+
 const Event = mongoose.model('Event', eventSchema);
 
 module.exports = Event;

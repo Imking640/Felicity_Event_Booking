@@ -115,35 +115,24 @@ exports.removeOrganizer = async (req, res) => {
     const { action } = req.query; // 'disable', 'delete', or 'archive'
 
     if (action === 'delete') {
-      // Permanently delete - also delete all their events, registrations, and tickets
+      // Permanently delete - cascade delete middleware in User model will handle all related data
       const Event = require('../models/Event');
-      const Registration = require('../models/Registration');
-      const Ticket = require('../models/Ticket');
       
-      // Find all events by this organizer
-      const organizerEvents = await Event.find({ organizer: req.params.id });
-      const eventIds = organizerEvents.map(e => e._id);
+      // Count events before deletion for response
+      const eventCount = await Event.countDocuments({ organizer: req.params.id });
+      const organizerName = organizer.organizerName;
       
-      // Delete all tickets for these events
-      await Ticket.deleteMany({ event: { $in: eventIds } });
-      console.log(`🗑️ Deleted tickets for organizer ${organizer.organizerName}'s events`);
+      console.log(`🗑️ Admin deleting organizer: ${organizerName} with ${eventCount} event(s)`);
       
-      // Delete all registrations for these events
-      await Registration.deleteMany({ event: { $in: eventIds } });
-      console.log(`🗑️ Deleted registrations for organizer ${organizer.organizerName}'s events`);
-      
-      // Delete all events
-      await Event.deleteMany({ organizer: req.params.id });
-      console.log(`🗑️ Deleted ${eventIds.length} events for organizer ${organizer.organizerName}`);
-      
-      // Delete the organizer
+      // Delete the organizer - cascade middleware will handle everything
       await organizer.deleteOne();
-      console.log(`🗑️ Permanently deleted organizer: ${organizer.organizerName}`);
+      
+      console.log(`✅ Admin completed deletion of organizer: ${organizerName}`);
       
       return res.json({
         success: true,
         message: 'Organizer and all associated events, registrations, and tickets permanently deleted',
-        deletedEvents: eventIds.length
+        deletedEvents: eventCount
       });
     } else {
       // Disable (soft delete)

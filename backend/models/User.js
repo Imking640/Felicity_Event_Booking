@@ -127,6 +127,39 @@ const participantSchema = new mongoose.Schema({
 
 const Participant = User.discriminator('participant', participantSchema);
 
+// CASCADE DELETE: When a participant is deleted, delete all their registrations
+participantSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
+  try {
+    const participantId = this._id;
+    
+    console.log(`🗑️ Cascading delete for participant: ${this.firstName} ${this.lastName} (${participantId})`);
+    
+    // Import models
+    const Registration = require('./Registration');
+    const Ticket = require('./Ticket');
+    
+    // Find all registrations by this participant
+    const registrations = await Registration.find({ participant: participantId });
+    console.log(`  📋 Found ${registrations.length} registration(s) to delete`);
+    
+    // Delete each registration (this will trigger registration's cascade delete)
+    for (const registration of registrations) {
+      await registration.deleteOne();
+    }
+    
+    // Delete any orphaned tickets (just in case)
+    const ticketDeleteResult = await Ticket.deleteMany({ participant: participantId });
+    console.log(`  ✓ Deleted ${ticketDeleteResult.deletedCount} orphaned ticket(s)`);
+    
+    console.log(`✅ Cascade delete completed for participant: ${this.firstName} ${this.lastName}`);
+    
+    next();
+  } catch (error) {
+    console.error('❌ Error in participant cascade delete:', error);
+    next(error);
+  }
+});
+
 // ORGANIZER MODEL - Extended fields for organizers
 const organizerSchema = new mongoose.Schema({
   organizerName: {
@@ -171,6 +204,39 @@ const organizerSchema = new mongoose.Schema({
 });
 
 const Organizer = User.discriminator('organizer', organizerSchema);
+
+// CASCADE DELETE: When an organizer is deleted, delete all their events
+organizerSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
+  try {
+    const organizerId = this._id;
+    
+    console.log(`🗑️ Cascading delete for organizer: ${this.organizerName} (${organizerId})`);
+    
+    // Import Event model
+    const Event = require('./Event');
+    const PasswordResetRequest = require('./PasswordResetRequest');
+    
+    // Find all events by this organizer
+    const events = await Event.find({ organizer: organizerId });
+    console.log(`  📋 Found ${events.length} event(s) to delete`);
+    
+    // Delete each event (this will trigger event's cascade delete)
+    for (const event of events) {
+      await event.deleteOne();
+    }
+    
+    // Delete all password reset requests for this organizer
+    const resetDeleteResult = await PasswordResetRequest.deleteMany({ organizer: organizerId });
+    console.log(`  ✓ Deleted ${resetDeleteResult.deletedCount} password reset request(s)`);
+    
+    console.log(`✅ Cascade delete completed for organizer: ${this.organizerName}`);
+    
+    next();
+  } catch (error) {
+    console.error('❌ Error in organizer cascade delete:', error);
+    next(error);
+  }
+});
 
 // ADMIN MODEL - Minimal additional fields
 const adminSchema = new mongoose.Schema({
