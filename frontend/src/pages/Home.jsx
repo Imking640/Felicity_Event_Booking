@@ -218,7 +218,7 @@ const Home = () => {
             textAlign: 'center'
           }}>
             <div>
-              <h2 className="glow-text" style={{
+              <h2 className="" style={{
                 fontSize: '4rem',
                 fontWeight: '900',
                 color: '#ffff00',
@@ -233,7 +233,7 @@ const Home = () => {
               }}>Events</p>
             </div>
             <div>
-              <h2 className="glow-text" style={{
+              <h2 className="" style={{
                 fontSize: '4rem',
                 fontWeight: '900',
                 color: '#ff00ff',
@@ -248,7 +248,7 @@ const Home = () => {
               }}>Participants</p>
             </div>
             <div>
-              <h2 className="glow-text" style={{
+              <h2 className="" style={{
                 fontSize: '4rem',
                 fontWeight: '900',
                 color: '#00ffff',
