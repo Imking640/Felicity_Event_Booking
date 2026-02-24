@@ -175,7 +175,102 @@ const postMessageToDiscord = async (message) => {
   }
 };
 
+/**
+ * Post a discussion announcement to Discord
+ * @param {Object} announcement - The announcement message object
+ * @param {Object} event - The event object
+ * @param {Object} organizer - The organizer object
+ */
+const postAnnouncementToDiscord = async (announcement, event, organizer) => {
+  try {
+    // Use organizer's webhook if available, otherwise use global webhook
+    const webhookUrl = organizer.discordWebhook || process.env.DISCORD_WEBHOOK_URL;
+    
+    if (!webhookUrl) {
+      console.log('⚠️ No Discord webhook configured, skipping announcement post');
+      return { success: false, message: 'Discord webhook not configured' };
+    }
+
+    // Format timestamp
+    const formatDate = (dateStr) => {
+      const date = new Date(dateStr);
+      return date.toLocaleString('en-US', { 
+        weekday: 'short',
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
+    const siteUrl = process.env.FRONTEND_URL || 'https://felicity-event-booking.vercel.app';
+    const eventUrl = `${siteUrl}/events/${event._id}`;
+
+    // Create Discord embed for announcement
+    const embed = {
+      title: `📢 Announcement: ${event.eventName}`,
+      description: announcement.content,
+      color: 0xFFD700, // Gold color for announcements
+      author: {
+        name: organizer.organizerName || organizer.name,
+        icon_url: organizer.logo || undefined
+      },
+      fields: [
+        {
+          name: '🎪 Event',
+          value: event.eventName,
+          inline: true
+        },
+        {
+          name: '📅 Date',
+          value: formatDate(event.eventStartDate),
+          inline: true
+        }
+      ],
+      footer: {
+        text: `Posted by ${organizer.organizerName || organizer.name}`,
+        icon_url: organizer.logo || undefined
+      },
+      timestamp: announcement.createdAt || new Date().toISOString()
+    };
+
+    // Discord webhook payload
+    const payload = {
+      content: `🔔 **New Announcement from ${organizer.organizerName || organizer.name}!**`,
+      embeds: [embed],
+      components: [
+        {
+          type: 1, // Action row
+          components: [
+            {
+              type: 2, // Button
+              style: 5, // Link style
+              label: '📖 View Event Discussion',
+              url: eventUrl
+            }
+          ]
+        }
+      ]
+    };
+
+    // Send to Discord
+    const response = await axios.post(webhookUrl, payload, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('✅ Discord announcement sent successfully for event:', event.eventName);
+    return { success: true, message: 'Announcement posted to Discord successfully' };
+
+  } catch (error) {
+    console.error('❌ Discord announcement error:', error.response?.data || error.message);
+    return { success: false, message: error.message };
+  }
+};
+
 module.exports = {
   postToDiscord,
-  postMessageToDiscord
+  postMessageToDiscord,
+  postAnnouncementToDiscord
 };

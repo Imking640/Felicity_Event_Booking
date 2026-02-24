@@ -1,6 +1,7 @@
 const Discussion = require('../models/Discussion');
 const Event = require('../models/Event');
 const Registration = require('../models/Registration');
+const { postAnnouncementToDiscord } = require('../utils/discordService');
 
 // @desc    Get discussion forum for an event
 // @route   GET /api/discussions/:eventId
@@ -210,6 +211,29 @@ exports.postMessage = async (req, res) => {
     const populatedMessage = discussion.messages.find(
       m => m._id.toString() === savedMessage._id.toString()
     );
+
+    // Send Discord notification if this is an announcement by organizer
+    if (messageType === 'announcement' && isOrganizer) {
+      try {
+        // Get full event details with organizer
+        const fullEvent = await Event.findById(eventId).populate('organizer');
+        
+        if (fullEvent && fullEvent.organizer) {
+          await postAnnouncementToDiscord(
+            {
+              content: content.trim(),
+              createdAt: savedMessage.createdAt
+            },
+            fullEvent,
+            fullEvent.organizer
+          );
+          console.log('📢 Discord announcement sent for event:', fullEvent.eventName);
+        }
+      } catch (discordError) {
+        // Don't fail the request if Discord posting fails
+        console.error('Discord announcement error (non-fatal):', discordError.message);
+      }
+    }
 
     res.status(201).json({
       success: true,
